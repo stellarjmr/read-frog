@@ -12,6 +12,7 @@ import { putBatchRequestRecord } from "@/utils/batch-request-record"
 import { CONFIG_STORAGE_KEY, DEFAULT_CONFIG } from "@/utils/constants/config"
 import { BATCH_SEPARATOR, BATCH_SEPARATOR_LINE_PATTERN } from "@/utils/constants/prompt"
 import {
+  VIDEO_SUMMARY_TIMEOUT_MS,
   BATCH_TIMEOUT_BASE_MS,
   BATCH_TIMEOUT_PER_CHAR_MS,
   MAX_BATCH_TIMEOUT_MS,
@@ -286,7 +287,9 @@ async function getOrGenerateVideoSummary(args: {
   }
 
   try {
-    const summary = await requestQueue.enqueue(thunk, Date.now(), cacheKey)
+    const summary = await requestQueue.enqueue(thunk, Date.now(), cacheKey, undefined, {
+      timeoutMs: VIDEO_SUMMARY_TIMEOUT_MS,
+    })
     return summary || null
   } catch (error) {
     logger.warn("Failed to get/generate video summary:", error)
