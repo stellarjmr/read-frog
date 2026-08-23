@@ -29,6 +29,10 @@ export const currentSubtitleAtom = atom<SubtitlesFragment | null>(null)
 /** Best original track (baseline or AI-segmented). Read-only for display/coordinator consumers. */
 export const sourceTrackAtom = atom<SubtitlesFragment[]>([])
 
+/** The scheduler's translated cues, for consumers that need the whole track
+ * rather than whichever one covers now. */
+export const translatedTrackAtom = atom<SubtitlesFragment[]>([])
+
 /**
  * Display cue: prefer a translated scheduler cue; otherwise fall back to the source track
  * at the current time (used for original / pending bilingual UI).
@@ -59,8 +63,6 @@ export const subtitlesSettingsPanelOpenAtom = atom<boolean>(false)
 export const subtitlesSettingsPanelViewAtom = atom<ViewId>(ROOT_VIEW)
 
 export const subtitlesSidebarOpenAtom = atom<boolean>(false)
-
-export const videoSummaryAtom = atom<string | null>(null)
 
 export const subtitlesSidebarActiveSectionAtom = atom<SectionId>(DEFAULT_SECTION_ID)
 
