@@ -77,29 +77,34 @@ export function SummarySection() {
   })
 
   if (provider.data && provider.data.status !== "ok") {
-    return match(provider.data)
-      .with({ status: "needsModel" }, () => (
-        <StatusCard icon={<IconFileTextAi />} title={i18n.t("subtitles.sidebar.summary.needsModel")}>
-          <Button
-            type="button"
-            variant="brand"
-            size="sm"
-            onClick={() =>
-              void sendMessage("openPage", {
-                url: browser.runtime.getURL("/options.html#/api-providers"),
-                active: true,
-              })
-            }
+    return (
+      match(provider.data)
+        .with({ status: "needsModel" }, () => (
+          <StatusCard
+            icon={<IconFileTextAi />}
+            title={i18n.t("subtitles.sidebar.summary.needsModel")}
           >
-            {i18n.t("subtitles.sidebar.summary.openSettings")}
-          </Button>
-        </StatusCard>
-      ))
-      // Already actionable; a settings link would point away from it.
-      .with({ status: "hostedUnavailable" }, ({ message }) => (
-        <StatusCard icon={<IconFileTextAi />} title={message} />
-      ))
-      .exhaustive()
+            <Button
+              type="button"
+              variant="brand"
+              size="sm"
+              onClick={() =>
+                void sendMessage("openPage", {
+                  url: browser.runtime.getURL("/options.html#/api-providers"),
+                  active: true,
+                })
+              }
+            >
+              {i18n.t("subtitles.sidebar.summary.openSettings")}
+            </Button>
+          </StatusCard>
+        ))
+        // Already actionable; a settings link would point away from it.
+        .with({ status: "hostedUnavailable" }, ({ message }) => (
+          <StatusCard icon={<IconFileTextAi />} title={message} />
+        ))
+        .exhaustive()
+    )
   }
 
   return match(query)
