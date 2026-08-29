@@ -12,6 +12,7 @@ import { i18n } from "@/utils/i18n"
 import { sendMessage } from "@/utils/message"
 import {
   checkVideoSummaryAvailability,
+  providerIdentity,
   videoSummaryQueryKey,
 } from "@/utils/subtitles/video-summary"
 import { currentVideoIdAtom, subtitlesStore } from "../../../atoms"
@@ -46,11 +47,16 @@ export function SummarySection() {
 
   // Owned here rather than by the menu entry: the transcript tab needs no
   // model, so an unusable provider must not keep the panel shut.
+  // Neither the key nor the freshness may be pinned to the id alone: repairing
+  // the provider, or a quota that frees up, has to be able to reach this.
   const provider = useQuery({
-    queryKey: ["subtitles", "summary-provider", videoSubtitles.providerId],
+    queryKey: [
+      "subtitles",
+      "summary-provider",
+      providerIdentity(providersConfig, videoSubtitles.providerId),
+    ],
     queryFn: checkVideoSummaryAvailability,
     retry: false,
-    staleTime: Infinity,
     meta: { suppressToast: true },
   })
 
@@ -75,6 +81,16 @@ export function SummarySection() {
     gcTime: Infinity,
     meta: { suppressToast: true },
   })
+
+  if (provider.status === "error") {
+    return (
+      <StatusCard icon={<IconFileTextAi />} title={i18n.t("subtitles.sidebar.summary.failedTitle")}>
+        <Button type="button" variant="brand" size="sm" onClick={() => void provider.refetch()}>
+          {i18n.t("subtitles.sidebar.summary.retry")}
+        </Button>
+      </StatusCard>
+    )
+  }
 
   if (provider.data && provider.data.status !== "ok") {
     return (

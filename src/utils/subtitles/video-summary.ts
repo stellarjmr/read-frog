@@ -16,7 +16,7 @@ const VIDEO_SUMMARY_QUERY_SCOPE = ["subtitles", "video-summary"] as const
  * An edited local model keeps its id, so the id alone would serve its predecessor's
  * summary forever. A hosted `modelRevision` is out of reach here; the background key has it.
  */
-function providerIdentity(providersConfig: ProvidersConfig, providerId: string): string {
+export function providerIdentity(providersConfig: ProvidersConfig, providerId: string): string {
   const resolved = resolveProviderRefForCapability("videoSubtitles", providersConfig, providerId)
   if (!resolved) {
     return providerId
