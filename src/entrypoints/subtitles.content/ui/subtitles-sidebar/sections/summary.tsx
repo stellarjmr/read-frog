@@ -5,7 +5,6 @@ import { match } from "ts-pattern"
 import { browser } from "#imports"
 import { MarkdownRenderer } from "@/components/markdown-renderer"
 import { Button } from "@/components/ui/base-ui/button"
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/base-ui/empty"
 import { Spinner } from "@/components/ui/base-ui/spinner"
 import { configFieldsAtomMap } from "@/utils/atoms/config"
 import { i18n } from "@/utils/i18n"
@@ -17,26 +16,7 @@ import {
 } from "@/utils/subtitles/video-summary"
 import { currentVideoIdAtom, subtitlesStore } from "../../../atoms"
 import { useSubtitlesUI } from "../../subtitles-ui-context"
-
-function StatusCard({
-  icon,
-  title,
-  children,
-}: {
-  icon: React.ReactNode
-  title: string
-  children?: React.ReactNode
-}) {
-  return (
-    <Empty className="min-h-full p-6">
-      <EmptyHeader>
-        <EmptyMedia variant="icon">{icon}</EmptyMedia>
-        <EmptyTitle className="font-normal">{title}</EmptyTitle>
-      </EmptyHeader>
-      {children}
-    </Empty>
-  )
-}
+import { StatusCard } from "./status-card"
 
 export function SummarySection() {
   const { generateVideoSummary } = useSubtitlesUI()
