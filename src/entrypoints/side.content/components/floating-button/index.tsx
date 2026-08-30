@@ -10,7 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/base-ui/dropdown-menu"
-import { anchoredToastManager } from "@/components/ui/base-ui/toast"
 import { useIsFullscreen } from "@/hooks/use-is-fullscreen"
 import { ANALYTICS_FEATURE, ANALYTICS_SURFACE } from "@/types/analytics"
 import { createFeatureUsageContext } from "@/utils/analytics"
@@ -32,7 +31,6 @@ const LONG_PRESS_DELAY_MS = 350
 const DRAG_START_DISTANCE_PX = 6
 const MIN_FLOATING_CONTAINER_TOP_PX = 30
 const FLOATING_CONTAINER_BOTTOM_CLEARANCE_PX = 200
-const FIREFOX_SIDEBAR_USER_ACTION_TOAST_ID = "firefox-sidebar-user-action"
 
 interface DragPoint {
   x: number
@@ -69,22 +67,6 @@ const floatingButtonControlOffsetClassNames = {
     expanded: "-right-6",
   },
 } satisfies Record<FloatingButtonSide, { collapsed: string; expanded: string }>
-
-function FirefoxSidebarHelpToast() {
-  return (
-    <span>
-      {i18n.t("sidePanel.firefoxUserActionHint")}{" "}
-      <a
-        href={i18n.t("sidePanel.firefoxUserActionHelpUrl")}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-primary underline underline-offset-2"
-      >
-        {i18n.t("sidePanel.firefoxUserActionHelpText")}
-      </a>
-    </span>
-  )
-}
 
 function getFloatingButtonSide(side: string | undefined): FloatingButtonSide {
   return side === "left" ? "left" : "right"
@@ -184,35 +166,15 @@ export default function FloatingButton() {
   }, [isFullscreen, setIsDraggingButton])
 
   const handleFloatingButtonClick = () => {
-    if (floatingButton.clickAction === "translate") {
-      const nextEnabled = !translationState.enabled
-      void sendMessage("tryToSetEnablePageTranslationOnContentScript", {
-        enabled: nextEnabled,
-        analyticsContext: nextEnabled
-          ? createFeatureUsageContext(
-              ANALYTICS_FEATURE.PAGE_TRANSLATION,
-              ANALYTICS_SURFACE.FLOATING_BUTTON,
-            )
-          : undefined,
-      })
-      return
-    }
-
-    void Promise.resolve(sendMessage("toggleSidePanel", undefined)).then((result) => {
-      if (result && !result.ok && result.reason === "requires-extension-user-action") {
-        if (!mainButtonRef.current) return
-
-        anchoredToastManager.add({
-          id: FIREFOX_SIDEBAR_USER_ACTION_TOAST_ID,
-          positionerProps: {
-            anchor: mainButtonRef.current,
-            side: floatingButtonSide === "right" ? "left" : "right",
-            sideOffset: 8,
-          },
-          type: "info",
-          title: <FirefoxSidebarHelpToast />,
-        })
-      }
+    const nextEnabled = !translationState.enabled
+    void sendMessage("tryToSetEnablePageTranslationOnContentScript", {
+      enabled: nextEnabled,
+      analyticsContext: nextEnabled
+        ? createFeatureUsageContext(
+            ANALYTICS_FEATURE.PAGE_TRANSLATION,
+            ANALYTICS_SURFACE.FLOATING_BUTTON,
+          )
+        : undefined,
     })
   }
 

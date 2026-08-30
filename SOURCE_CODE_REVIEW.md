@@ -2,8 +2,9 @@
 
 ## Build Environment
 
-- **Node.js**: ^26.5.1
-- **pnpm**: 11.20.0 (pinned by the `packageManager` field in `package.json`)
+- **Node.js**: ^26.7.0
+- **pnpm**: 11.22.0 (pinned by the `packageManager` field in `package.json`)
+- **Target**: Safari 18 or later only
 
 ## Build Steps
 
@@ -14,20 +15,19 @@ npx get-pnpm
 # 2. Install dependencies using the version pinned in package.json
 pnpm install --frozen-lockfile
 
-# 3. Build the Firefox extension
-pnpm zip:firefox
+# 3. Build and verify the Safari extension
+pnpm zip
+pnpm verify:safari
 ```
 
 ## Environment Variables
 
-The `.env.production` file is included in this archive. It contains:
-
-- `WXT_GOOGLE_CLIENT_ID` — A public Google OAuth Client ID used for Google Sign-In. This is **not** a secret; OAuth Client IDs are designed to be embedded in client-side applications.
+No environment variable is required for a reproducible local Safari build. PostHog variables are optional and are used only when producing an analytics-enabled release.
 
 ## Build Output
 
 After a successful build, the packaged extension will be at:
 
 ```
-.output/read-frogextension-<version>-firefox.zip
+.output/*-safari.zip
 ```

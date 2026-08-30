@@ -1,5 +1,9 @@
 minimumReleaseAge: 0
 
+# WXT's optional `web-ext` peer is only needed for non-Safari runners. Safari
+# uses WXT's manual-loading runner, so do not auto-install unused peers.
+autoInstallPeers: false
+
 shellEmulator: true
 
 trustPolicy: no-downgrade

@@ -31,14 +31,14 @@ const BLOG_LOCALE_BY_PRIMARY_LANGUAGE: Partial<Record<string, BlogLocale>> = {
 export type { LatestBlogPost } from "@read-frog/definitions"
 
 /**
- * Saves the last viewed blog date to Chrome storage
+ * Saves the last viewed blog date to extension storage.
  */
 export async function saveLastViewedBlogDate(date: Date): Promise<void> {
   await storage.setItem(`local:${LAST_VIEWED_BLOG_DATE_KEY}`, date.toISOString())
 }
 
 /**
- * Retrieves the last viewed blog date from Chrome storage
+ * Retrieves the last viewed blog date from extension storage.
  */
 export async function getLastViewedBlogDate(): Promise<Date | null> {
   const dateStr = await storage.getItem<string>(`local:${LAST_VIEWED_BLOG_DATE_KEY}`)

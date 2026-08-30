@@ -21,7 +21,7 @@ body:
       value: |
         This template is used for reporting an issue with Read Frog.
 
-        Feature requests should be opened via the [Feature Request Form](https://github.com/mengxi-ream/read-frog/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml&title=)
+        Feature requests should be opened via the [Feature Request Form](https://github.com/stellarjmr/read-frog/issues/new?assignees=&labels=enhancement&projects=&template=feature_request.yml&title=)
   - type: textarea
     id: expected
     attributes:
@@ -53,7 +53,7 @@ body:
       label: Which area(s) are affected? (Select all that apply)
       multiple: true
       options:
-        - Browser Extension
+        - Safari Extension
         - Website
         - Other
     validations:
@@ -62,7 +62,7 @@ body:
     id: extension_version
     attributes:
       label: Extension version (if applicable)
-      description: Provide the current version of the browser extension
+      description: Provide the current version of the Safari extension
       placeholder: 1.x.x
   - type: textarea
     id: environment
@@ -71,9 +71,9 @@ body:
       description: Please collect the following information and paste the results.
       render: bash
       placeholder: |
-        - OS: [e.g. macOS 14.5]
-        - Browser: [e.g. Chrome 126, Edge 125]
-        - Extension channel/version: [e.g. Chrome Web Store 1.2.3]
+        - OS: [e.g. macOS 27.0]
+        - Safari: [e.g. Safari 27.0]
+        - Extension source/version: [e.g. temporary build 1.46.6]
         - Website: [e.g. https://readfrog.app, date/time observed]
     validations:
       required: true
@@ -82,4 +82,4 @@ body:
     attributes:
       label: Additional context
       description: |
-        Any extra information that might help us investigate. For example, is it only reproducible online, or locally too? Is the issue only happening in a specific website or browser?
+        Any extra information that might help us investigate. For example, is it only reproducible online, or locally too? Is the issue only happening on a specific website or Safari version?

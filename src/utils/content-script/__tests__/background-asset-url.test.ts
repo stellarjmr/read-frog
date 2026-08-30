@@ -50,10 +50,13 @@ describe("resolveContentScriptAssetUrl", () => {
 
     await expect(resolveContentScriptAssetBlob("data:image/svg+xml;base64,AAA")).resolves.toBeNull()
     await expect(
-      resolveContentScriptAssetBlob("moz-extension://abc/assets/provider.png"),
+      resolveContentScriptAssetBlob("safari-web-extension://abc/assets/provider.png"),
     ).resolves.toBeNull()
     expect(
-      shouldProxyAssetUrl("https://cdn.example.com/logo.webp", "moz-extension://abc/options.html"),
+      shouldProxyAssetUrl(
+        "https://cdn.example.com/logo.webp",
+        "safari-web-extension://abc/options.html",
+      ),
     ).toBe(false)
     expect(sendMessageMock).not.toHaveBeenCalled()
   })

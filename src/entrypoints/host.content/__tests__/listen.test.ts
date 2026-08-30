@@ -89,9 +89,9 @@ describe("setupUrlChangeListener", () => {
     ])
   })
 
-  // jsdom has no `window.navigation`, so this exercises the monkeypatch-only
-  // path (Firefox/Safari). In Chrome the same pushState is reported via
-  // `currententrychange` instead — see the ordering test below.
+  // jsdom has no `window.navigation`, so this exercises Safari's
+  // monkeypatch-only fallback path. A Navigation API implementation may also
+  // report the same pushState via `currententrychange`.
   it("fires on pushState pathname changes and ignores hash-only updates (no Navigation API)", () => {
     cleanup = setupUrlChangeListener()
 
@@ -108,11 +108,11 @@ describe("setupUrlChangeListener", () => {
     ])
   })
 
-  it("dispatches exactly one event when currententrychange fires inside pushState (Chrome ordering)", () => {
+  it("dispatches exactly one event when currententrychange fires inside pushState", () => {
     const navigation = installNavigationMock(`${origin}/a`)
 
-    // In real Chrome (verified on 145), `currententrychange` fires
-    // SYNCHRONOUSLY inside `history.pushState()` — before the monkeypatched
+    // Some Navigation API implementations fire `currententrychange`
+    // synchronously inside `history.pushState()` — before the monkeypatched
     // wrapper resumes and runs its own fire(). Simulate that ordering with a
     // fake "native" pushState that commits the URL and dispatches
     // currententrychange, installed BEFORE the listener monkeypatches over

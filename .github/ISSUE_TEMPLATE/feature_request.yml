@@ -21,7 +21,7 @@ body:
       value: |
         This template is used for suggesting a feature for Read Frog.
 
-        Bug reports should be opened via the [Bug Report Form](https://github.com/mengxi-ream/read-frog/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml&title=)
+        Bug reports should be opened via the [Bug Report Form](https://github.com/stellarjmr/read-frog/issues/new?assignees=&labels=bug&projects=&template=bug_report.yml&title=)
   - type: textarea
     id: problem
     attributes:
@@ -42,7 +42,7 @@ body:
       label: Which area(s) would this feature affect? (Select all that apply)
       multiple: true
       options:
-        - Browser Extension
+        - Safari Extension
         - Website
         - Other
     validations:

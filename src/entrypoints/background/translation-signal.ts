@@ -259,7 +259,7 @@ export function translationMessage() {
 
     // A user's manual-off marker only applies to the origin it was set on;
     // clear it once the tab commits to a different origin (or an origin-less
-    // URL like chrome://) so other sites keep auto-translating.
+    // Safari internal URL) so other sites keep auto-translating.
     if (state.userDisabled) {
       if (state.origin && state.origin === getPageTranslationOriginScope(details.url)) return
 

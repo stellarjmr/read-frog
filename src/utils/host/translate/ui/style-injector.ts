@@ -42,8 +42,8 @@ function supportsConstructableStyleSheets(
 
     // A constructed stylesheet belongs to the realm that built it, and assigning one to another
     // document throws NotAllowedError. Nothing here can build a sheet in a foreign realm, so a root
-    // from one takes the <style> path instead — the same path Firefox already falls back to. Checked
-    // ahead of the probe below so the expected case does not surface as a warning.
+    // from one takes the <style> path instead. Check ahead of the probe below so the expected case
+    // does not surface as a warning.
     if (getRootDocument(root) !== document) {
       constructableStyleSheetSupportMap.set(root, false)
       return false
@@ -54,14 +54,9 @@ function supportsConstructableStyleSheets(
       return false
     }
 
-    // Firefox content scripts can expose adoptedStyleSheets while still
-    // throwing when the returned object is iterated or assigned via Xray
-    // wrappers. Probe a full read -> assign -> read cycle instead of trusting
-    // property existence alone.
-    // Related bugs:
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1928865
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1770592
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1817675
+    // A content-script realm can expose adoptedStyleSheets while still
+    // throwing when the returned object is iterated or assigned. Probe a full
+    // read -> assign -> read cycle instead of trusting property existence.
     const probeSheet = new CSSStyleSheet()
     const previousSheets = [...root.adoptedStyleSheets]
 

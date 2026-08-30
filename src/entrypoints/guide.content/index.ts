@@ -17,10 +17,6 @@ import { createExtensionStatusResponse } from "./extension-status"
 export default defineContentScript({
   matches: env.WXT_OFFICIAL_SITE_ORIGINS.map((origin: string) => `${origin}/*`),
   async main() {
-    onMessage("pinStateChanged", (msg) => {
-      window.postMessage({ source: `${kebabCase(APP_NAME)}-ext`, ...msg }, "*")
-    })
-
     onMessage("guideDictionaryNotebaseStateChanged", (msg) => {
       window.postMessage({ source: `${kebabCase(APP_NAME)}-ext`, ...msg }, "*")
     })

@@ -25,8 +25,7 @@
    lands one pixel below the rim and the two blur together into a white band
    instead of an edge. Displacement
    refraction — what the liquid-glass component libraries sell — resolves to
-   nothing at 16px, and its `backdrop-filter: url(#…)` is Chromium-only, which
-   the Firefox build cannot use.
+   nothing at 16px, and SVG-filter displacement is not dependable in Safari.
 
    Set `--glass-tint`, `--glass-glow` and `--glass-rim` per plan; see the
    `glass-badge-{free,pro,ultra}` utilities below. */

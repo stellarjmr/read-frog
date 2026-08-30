@@ -27,7 +27,7 @@ function getSelectionCustomActionMenuId(actionId: string) {
 /**
  * Register all context menu event listeners synchronously
  * This must be called during main() execution to ensure listeners are registered
- * before Chrome completes initialization
+ * before Safari completes initialization
  */
 export function registerContextMenuListeners() {
   // Listen for config changes to update context menu

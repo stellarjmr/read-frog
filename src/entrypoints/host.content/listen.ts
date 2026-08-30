@@ -54,7 +54,7 @@ export function setupUrlChangeListener(signal?: AbortSignal): () => void {
   window.addEventListener("popstate", onPopState, { signal })
   window.addEventListener("hashchange", onHashChange, { signal })
 
-  /* ---------- 3. Modern Navigation API (only Chrome/Edge) ---------- */
+  /* ---------- 3. Modern Navigation API when Safari exposes it ---------- */
   // Prefer `currententrychange` over `navigate`, for two reasons:
   //  • `navigate` also fires for CROSS-document navigations (clicking a plain
   //    link), so we ran a full same-origin URL-change cycle on a page that was
@@ -84,17 +84,14 @@ export function setupUrlChangeListener(signal?: AbortSignal): () => void {
     }
   }
 
-  /* ---------- 4. Fallback polling (Firefox/Safari only) ---------- */
-  let intervalId: ReturnType<typeof setInterval> | null = null
-  if (!["chrome", "edge"].includes(import.meta.env.BROWSER)) {
-    intervalId = setInterval(() => {
-      const now = location.href
-      if (now !== prev) {
-        fire(prev, now, "interval")
-        prev = now
-      }
-    }, 1000)
-  }
+  /* ---------- 4. Safari fallback polling ---------- */
+  let intervalId: ReturnType<typeof setInterval> | null = setInterval(() => {
+    const now = location.href
+    if (now !== prev) {
+      fire(prev, now, "interval")
+      prev = now
+    }
+  }, 1000)
 
   /* ---------- Cleanup ---------- */
   return () => {

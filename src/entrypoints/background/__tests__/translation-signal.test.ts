@@ -487,7 +487,7 @@ describe("translationMessage", () => {
 
     it("falls back to a bare disable when the popup disables on an origin-less URL", async () => {
       await setupSubject()
-      tabsGetMock.mockResolvedValue({ id: 42, url: "chrome://newtab/" })
+      tabsGetMock.mockResolvedValue({ id: 42, url: "safari://newtab/" })
 
       await getHandler("tryToSetEnablePageTranslationByTabId")({
         data: { tabId: 42, enabled: false },
@@ -663,7 +663,7 @@ describe("translationMessage", () => {
       await getOnCommittedListener()({
         tabId: 42,
         frameId: 0,
-        url: "chrome://newtab/",
+        url: "safari://newtab/",
       })
 
       expect(storageRemoveItemMock).toHaveBeenCalledWith(getTranslationStateKey(42))

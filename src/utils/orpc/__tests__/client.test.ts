@@ -49,7 +49,7 @@ describe("oRPC background fetch", () => {
     })
   })
 
-  it("forwards Firefox request headers and body when body is null", async () => {
+  it("forwards Safari request headers and body when body is null", async () => {
     const headers = new Headers({
       "content-type": "application/json",
       "x-orpc-source": "extension",

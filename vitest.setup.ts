@@ -94,10 +94,8 @@ vi.mock("wxt/testing/fake-browser", async () => {
   Object.assign(actual.fakeBrowser.i18n, {
     getMessage: (key: string) => key.replaceAll("_", "."),
   })
-  Object.assign(actual.fakeBrowser.identity, {
-    getRedirectURL: () => "https://mock-redirect-url.chromiumapp.org/",
-  })
   Object.assign(actual.fakeBrowser.runtime, {
+    getURL: (path = "") => `safari-web-extension://test-extension-id/${path.replace(/^\//, "")}`,
     getManifest: () => ({
       manifest_version: 3,
       name: "Read Frog",

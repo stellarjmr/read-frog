@@ -33,7 +33,7 @@ const TRAILING_SEPARATORS_RE = /[\s\p{P}]+$/u
  */
 function findPreviewEnd(text: string): number {
   const capped = Math.min(text.length, SYSTEM_PROMPT_PREVIEW_CHARS)
-  // Firefox only grew Intl.Segmenter in 125, well past the 112 this extension still supports.
+  // Keep a character fallback for Safari versions or contexts without Intl.Segmenter.
   if (typeof Intl.Segmenter !== "function") return capped
 
   const segmenter = new Intl.Segmenter(undefined, { granularity: "word" })

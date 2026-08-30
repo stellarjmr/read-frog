@@ -54,9 +54,11 @@ export const EDGE_TTS_CLIENT_VERSION = "4.0.530a 5fe1dc6c"
 export const EDGE_TTS_USER_ID = "0f04d16a175c411e"
 export const EDGE_TTS_HOME_REGION = "zh-Hans-CN"
 
+// The consumer speech endpoint expects its own client signature. This wire
+// value is part of the Edge TTS protocol, not an extension browser target.
 export const EDGE_TTS_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36 Edg/127.0.0.0"
 
 export const EDGE_TTS_HTTP_ENABLED = import.meta.env.WXT_EDGE_TTS_HTTP_ENABLED !== "false"
 
-export const EDGE_TTS_SUPPORTED_BROWSERS = ["chrome", "edge", "firefox"] as const
+export const EDGE_TTS_SUPPORTED_BROWSERS = ["safari"] as const

@@ -1,4 +1,4 @@
 body {
-  /* Chrome set the font to 75% of the default size */
-  font-size: initial; /* reset to 16px */
+  /* Normalize the extension-page body to Safari's default 16px base size. */
+  font-size: initial;
 }

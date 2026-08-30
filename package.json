@@ -2,17 +2,13 @@
   "name": "@read-frog/extension",
   "version": "1.46.6",
   "private": true,
-  "description": "Read Frog browser extension for language learning",
+  "description": "Read Frog Safari extension for language learning",
   "type": "module",
   "scripts": {
-    "build": "wxt build",
-    "build:edge": "wxt build -b edge",
-    "build:firefox": "wxt build -b firefox --mv3",
-    "build:analyze": "wxt build --analyze",
-    "dev:local": "WXT_USE_LOCAL_PACKAGES=true wxt",
-    "dev": "wxt",
-    "dev:edge": "wxt -b edge",
-    "dev:firefox": "wxt -b firefox --mv3",
+    "build": "WXT_SKIP_ENV_VALIDATION=true wxt build -b safari --mv3",
+    "build:analyze": "WXT_SKIP_ENV_VALIDATION=true wxt build -b safari --mv3 --analyze",
+    "dev:local": "WXT_USE_LOCAL_PACKAGES=true wxt -b safari --mv3",
+    "dev": "wxt -b safari --mv3",
     "fmt": "oxfmt --write .",
     "fmt:check": "oxfmt --check .",
     "lint": "oxlint --type-aware --type-check",
@@ -23,10 +19,8 @@
     "test:watch": "vitest",
     "type-check": "oxlint --type-aware --type-check",
     "scrape:ai-sdk-models": "npx tsx scripts/scrape-ai-sdk-provider-models.ts --out scripts/output/ai-sdk-provider-models.json",
-    "zip": "wxt zip",
-    "zip:edge": "wxt zip -b edge",
-    "zip:firefox": "wxt zip -b firefox --mv3",
-    "zip:all": "pnpm zip && pnpm zip:edge && pnpm zip:firefox",
+    "verify:safari": "node scripts/verify-safari-build.mjs",
+    "zip": "WXT_SKIP_ENV_VALIDATION=true wxt zip -b safari --mv3 --sources",
     "release": "changeset git-tag",
     "prepare": "husky"
   },
@@ -134,6 +128,7 @@
     "@modyfi/vite-plugin-yaml": "^1.1.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@tanstack/react-query-devtools": "^5.101.4",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@total-typescript/ts-reset": "^0.6.1",
@@ -163,7 +158,6 @@
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
     "vitest": "^4.1.10",
-    "web-ext": "^10.6.0",
     "wxt": "0.21.4"
   },
   "devEngines": {
@@ -179,13 +173,7 @@
       "build": {
         "executor": "nx:run-commands",
         "options": {
-          "command": "wxt build"
-        }
-      },
-      "build:firefox": {
-        "executor": "nx:run-commands",
-        "options": {
-          "command": "wxt build -b firefox"
+          "command": "WXT_SKIP_ENV_VALIDATION=true wxt build -b safari --mv3"
         }
       },
       "test": {

@@ -180,10 +180,9 @@
 :root {
   /* Latin → Inter Variable (bundled via @fontsource-variable/inter, imported
      only in the extension's own pages — not content scripts). CJK stays on the
-     lang-correct native font via system-ui (PingFang / 微软雅黑 on macOS/
-     Windows), then falls to 思源黑体 (Source Han Sans / Noto Sans CJK) — the
-     default on Android/ChromeOS/Linux — before the generic sans-serif. Emoji
-     families stay last. */
+     lang-correct native font via system-ui (PingFang on Apple platforms), then
+     falls to 思源黑体 (Source Han Sans / Noto Sans CJK) before the generic
+     sans-serif. Emoji families stay last. */
   --rf-font-sans:
     "Inter Variable", ui-sans-serif, system-ui, "Source Han Sans SC", "Noto Sans SC",
     "Source Han Sans TC", "Noto Sans TC", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
@@ -316,11 +315,8 @@
   }
 }
 
-/* Chromium injects `body { font-family: system-ui, … }` (extension_fonts.css)
-   into every extension page, which intercepts the font-family inherited from
-   Tailwind preflight's `html` rule. The injected sheet cascades as UNLAYERED
-   author CSS, so this override must be unlayered too — inside @layer base it
-   would lose. */
+/* Keep this override unlayered so the extension-page body reliably inherits
+   the bundled font instead of a user-agent or injected body-level rule. */
 body {
   font-family: var(--rf-font-sans);
 }

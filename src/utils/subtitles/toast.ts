@@ -49,7 +49,7 @@ function show(title: string, action: SubtitlesErrorAction | undefined, anchor: H
         children: action.label,
         onClick: () => {
           manager.close(toastId)
-          // Content scripts cannot use chrome.tabs — route through the background.
+          // Content scripts route tab creation through the background.
           void sendMessage("openPage", { url: action.url, active: true })
         },
       },

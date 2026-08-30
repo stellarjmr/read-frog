@@ -14,11 +14,10 @@ import { configFieldsAtomMap } from "@/utils/atoms/config"
 import { buildFeaturebasePortalUrl } from "@/utils/featurebase"
 import { i18n } from "@/utils/i18n"
 import { resolveUiLocale } from "@/utils/i18n/locale-map"
-import { getReviewUrl } from "@/utils/utils"
 
 const SUPPORT_EMAIL = "contact@readfrog.app"
 const DISCORD_INVITE_URL = "https://discord.gg/ej45e3PezJ"
-const GITHUB_REPO_URL = "https://github.com/mengxi-ream/read-frog"
+const GITHUB_REPO_URL = "https://github.com/stellarjmr/read-frog"
 const WECHAT_QR_URL = `${GITHUB_REPO_URL}/blob/main/assets/wechat-account.jpg`
 
 function openExternal(url: string) {
@@ -113,14 +112,6 @@ export function MoreMenu() {
           >
             <Icon icon="fa7-brands:github" className="size-4" strokeWidth={1.6} />
             {i18n.t("popup.more.starGithub")}
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            onClick={() => openExternal(getReviewUrl("popup"))}
-            className="cursor-pointer"
-          >
-            <Icon icon="tabler:star" className="size-4" strokeWidth={1.6} />
-            {i18n.t("popup.more.rateUs")}
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

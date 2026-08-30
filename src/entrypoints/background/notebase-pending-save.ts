@@ -14,9 +14,7 @@ import type {
   PendingNotebaseSave,
   PendingNotebaseSaveActionStatus,
 } from "@/utils/notebase/pending-save"
-import { AUTH_COOKIE_PATTERNS } from "@read-frog/definitions"
 import { browser } from "#imports"
-import { env } from "@/env"
 import { backgroundAuthClient } from "@/utils/auth/background-auth-client"
 import { getLocalConfig, setLocalConfig } from "@/utils/config/storage"
 import { patchSelectionToolbarAction } from "@/utils/custom-actions"
@@ -47,6 +45,7 @@ import {
   validateStillCanSavePendingCreateNotebaseSave,
 } from "@/utils/notebase/pending-save"
 import { backgroundOrpcClient } from "@/utils/orpc/background-client"
+import { onSafariAuthCookieChanged } from "./auth-cookie-monitor"
 import { completeGuideDictionaryNotebaseAndNotify } from "./new-user-guide"
 
 interface PendingNotebaseSaveProcessorDeps {
@@ -69,18 +68,6 @@ interface PendingNotebaseSaveProcessorDeps {
 }
 
 type PendingProcessingStatus = PendingNotebaseSaveActionStatus | "expired" | "missing_config"
-
-function isAuthCookieChange(cookie: { domain?: string; name: string }) {
-  if (!cookie.domain) {
-    return false
-  }
-
-  const cookieDomain = cookie.domain
-  return (
-    env.WXT_AUTH_COOKIE_DOMAINS.some((domain: string) => cookieDomain.includes(domain)) &&
-    AUTH_COOKIE_PATTERNS.some((name) => cookie.name.includes(name))
-  )
-}
 
 async function getAuthenticatedAccount() {
   try {
@@ -740,11 +727,5 @@ export function setupNotebasePendingSaveProcessor(waitUntilReady: () => Promise<
 
   void processPendingNotebaseSave("startup")
 
-  if (browser.cookies?.onChanged) {
-    browser.cookies.onChanged.addListener((changeInfo) => {
-      if (isAuthCookieChange(changeInfo.cookie)) {
-        void processPendingNotebaseSave("auth-cookie-change")
-      }
-    })
-  }
+  onSafariAuthCookieChanged(() => processPendingNotebaseSave("auth-cookie-change"))
 }

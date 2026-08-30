@@ -17,14 +17,14 @@ describe("isExtensionContextAlive", () => {
     expect(isExtensionContextAlive()).toBe(true)
   })
 
-  it("is dead once Chrome clears runtime.id on the stale side of an update", () => {
+  it("is dead once Safari clears runtime.id on the stale side of an update", () => {
     killExtensionContext()
     expect(isExtensionContextAlive()).toBe(false)
   })
 })
 
 describe("isExtensionContextInvalidatedError", () => {
-  it("matches the error Chrome throws from a stale content script", () => {
+  it("matches the error from a stale Safari content script", () => {
     expect(isExtensionContextInvalidatedError(new Error("Extension context invalidated."))).toBe(
       true,
     )

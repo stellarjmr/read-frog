@@ -1,4 +1,4 @@
-name: Release Extension
+name: Release Safari Extension
 
 on:
   push:
@@ -12,7 +12,6 @@ on:
         type: string
 
 env:
-  WXT_GOOGLE_CLIENT_ID: ${{ secrets.WXT_GOOGLE_CLIENT_ID || vars.WXT_GOOGLE_CLIENT_ID }}
   WXT_POSTHOG_API_KEY: ${{ secrets.WXT_POSTHOG_API_KEY || vars.WXT_POSTHOG_API_KEY }}
   WXT_POSTHOG_HOST: ${{ secrets.WXT_POSTHOG_HOST || vars.WXT_POSTHOG_HOST }}
   WXT_ANALYTICS_DAILY_FEATURE_CACHE_ENABLED: "true"
@@ -21,10 +20,9 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
   release:
-    name: Release Extension
+    name: Release Safari Extension
     runs-on: ubuntu-latest
     env:
-      SKIP_ENV_VALIDATION: true
       HUSKY: 0
     steps:
       - name: Checkout Repo
@@ -124,7 +122,9 @@ jobs:
       - name: Build and Zip Extension
         if: steps.changesets.outputs.published == 'true' || github.event_name ==
           'workflow_dispatch'
-        run: pnpm zip:all
+        run: |
+          pnpm zip
+          pnpm verify:safari
 
       - name: Upload Extension Zip to Release
         if: steps.changesets.outputs.published == 'true' || github.event_name ==
@@ -137,27 +137,6 @@ jobs:
             TAG="v$VERSION"
           fi
 
-          gh release upload "$TAG" .output/*-chrome.zip .output/*-edge.zip .output/*-firefox.zip .output/*-sources.zip --clobber
+          gh release upload "$TAG" .output/*-safari.zip .output/*-sources.zip --clobber
         env:
           GH_TOKEN: ${{ github.token }}
-      # - name: Submit to Chrome & Edge Stores
-      #   if: steps.changesets.outputs.published == 'true'
-      #   run: |
-      #     ZIP_FILE=$(ls .output/*-chrome.zip)
-      #     echo "Uploading: $ZIP_FILE"
-
-      #     # Verify manifest version before upload
-      #     MANIFEST_VERSION=$(unzip -p "$ZIP_FILE" manifest.json | jq -r '.version')
-      #     echo "Manifest version: $MANIFEST_VERSION"
-
-      #     pnpm wxt submit \
-      #       --chrome-zip "$ZIP_FILE" \
-      #       --edge-zip "$ZIP_FILE"
-      #   env:
-      #     CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-      #     CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-      #     CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
-      #     CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-      #     EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
-      #     EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
-      #     EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}

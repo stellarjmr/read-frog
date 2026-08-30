@@ -38,12 +38,12 @@ describe("buildFeaturebaseFeedbackMetadata", () => {
   it("keeps only the origin and pathname for HTTP(S) pages", () => {
     expect(
       buildFeaturebaseFeedbackMetadata({
-        browserName: "edge",
+        browserName: "safari",
         extensionVersion: "1.43.3",
         pageUrl: "https://user:password@example.com/private/path?token=secret#section",
       }),
     ).toEqual({
-      browser: "edge",
+      browser: "safari",
       extension_version: "1.43.3",
       page_url: "https://example.com/private/path",
     })
@@ -54,12 +54,12 @@ describe("buildFeaturebaseFeedbackMetadata", () => {
     (pageUrl) => {
       expect(
         buildFeaturebaseFeedbackMetadata({
-          browserName: "firefox",
+          browserName: "safari",
           extensionVersion: "1.43.3",
           pageUrl,
         }),
       ).toEqual({
-        browser: "firefox",
+        browser: "safari",
         extension_version: "1.43.3",
       })
     },

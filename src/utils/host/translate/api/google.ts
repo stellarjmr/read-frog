@@ -19,10 +19,9 @@ const GOOGLE_TRANSLATE_HTML_CLIENT = "wt_lib"
  * DNS, TLS, timeout, non-2xx, unexpected payload — answers `false`; the caller is expected
  * to fall back to a provider that works everywhere.
  *
- * To exercise the blocked-network path locally, add one of these to `chromiumArgs` in
- * `web-ext.config.ts` (`pnpm dev` uses a fresh profile per run, so every start is an install):
- *   --host-resolver-rules=MAP translate-pa.googleapis.com ^NOTFOUND   → DNS fails fast
- *   --host-resolver-rules=MAP translate-pa.googleapis.com 203.0.113.1 → dropped, times out
+ * To exercise the blocked-network path locally, block
+ * `translate-pa.googleapis.com` with a test DNS or network rule before loading
+ * the temporary extension in Safari.
  */
 export async function isGoogleTranslateReachable(options?: {
   timeoutMs?: number

@@ -2874,9 +2874,8 @@ describe("translate", () => {
 
     describe("plain-text document viewer", () => {
       // A text/plain URL (nifty.org stories, RFC mirrors, raw logs) reaches the
-      // page as one browser-generated <pre> holding the whole file, with
-      // Chrome's own `white-space: pre-wrap` inline style. It is the only
-      // content such a page has, so the blanket PRE block left it untranslated.
+      // page as one browser-generated <pre> holding the whole file. It is the
+      // only content such a page has, so the blanket PRE block left it untranslated.
       const paragraphs = [
         "Archive header lines describe the collection, the author\ncontact address and the posting date of the chapter.",
         "The first paragraph of the story is hard wrapped across\nseveral short lines the way a usenet posting would be.",

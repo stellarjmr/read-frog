@@ -7,12 +7,10 @@ import { configFieldsAtomMap } from "@/utils/atoms/config"
 import { sendMessage } from "@/utils/message"
 import FloatingButton from ".."
 
-const toastAddMock = vi.fn<(...args: any[]) => any>()
-
 vi.mock("#imports", () => ({
   browser: {
     runtime: {
-      getURL: (path = "") => `chrome-extension://test-extension${path}`,
+      getURL: (path = "") => `safari-web-extension://test-extension${path}`,
       getManifest: () => ({ version: "1.43.3" }),
     },
   },
@@ -26,7 +24,7 @@ vi.mock("@/utils/atoms/config", () => {
     enabled: true,
     position: 0.66,
     side: "right",
-    clickAction: "panel",
+    clickAction: "translate",
     disabledFloatingButtonPatterns: [],
     locked: false,
   })
@@ -67,14 +65,8 @@ vi.mock("@/utils/i18n/locale-map", () => ({
   resolveUiLocale: (uiLanguage: string) => (uiLanguage === "auto" ? "en" : uiLanguage),
 }))
 
-vi.mock("@/components/ui/base-ui/toast", () => ({
-  anchoredToastManager: {
-    add: (...args: unknown[]) => toastAddMock(...args),
-  },
-}))
-
 beforeAll(() => {
-  vi.stubEnv("BROWSER", "chrome")
+  vi.stubEnv("BROWSER", "safari")
 
   class ResizeObserverMock {
     observe() {}
@@ -89,7 +81,6 @@ afterEach(() => {
   vi.useRealTimers()
   vi.restoreAllMocks()
   vi.mocked(sendMessage).mockReset()
-  toastAddMock.mockReset()
   window.history.replaceState({}, "", "/")
   setViewport(1024, 768)
 })
@@ -293,31 +284,6 @@ describe("floatingButton controls", () => {
     },
   )
 
-  it("toggles the browser side panel on a normal panel click", () => {
-    vi.useFakeTimers()
-    renderFloatingButton({ clickAction: "panel" })
-
-    const mainButton = getMainButton()
-
-    fireEvent.pointerDown(mainButton, {
-      pointerId: 1,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 900,
-      clientY: 500,
-    })
-    vi.advanceTimersByTime(349)
-    fireEvent.pointerUp(mainButton, {
-      pointerId: 1,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 900,
-      clientY: 500,
-    })
-
-    expect(sendMessage).toHaveBeenCalledWith("toggleSidePanel", undefined)
-  })
-
   it("places feedback after settings and opens a localized Featurebase URL with safe metadata", () => {
     window.history.replaceState({}, "", "/private/path?token=secret#section")
     renderFloatingButton()
@@ -345,7 +311,7 @@ describe("floatingButton controls", () => {
     expect(openedUrl.origin).toBe("https://feedback.readfrog.app")
     expect(openedUrl.pathname).toBe("/en")
     expect(JSON.parse(openedUrl.searchParams.get("metaData")!)).toEqual({
-      browser: "chrome",
+      browser: "safari",
       extension_version: "1.0.0",
       // The intent is query/hash stripping, not the origin itself.
       page_url: `${window.location.origin}/private/path`,
@@ -354,99 +320,6 @@ describe("floatingButton controls", () => {
       url: openedUrl.toString(),
       active: true,
     })
-  })
-
-  it("shows a Firefox sidebar help link when the browser requires an extension user action", async () => {
-    vi.useFakeTimers()
-    vi.mocked(sendMessage).mockResolvedValue({
-      ok: false,
-      reason: "requires-extension-user-action",
-    })
-    renderFloatingButton({ clickAction: "panel" })
-
-    const mainButton = getMainButton()
-
-    fireEvent.pointerDown(mainButton, {
-      pointerId: 1,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 900,
-      clientY: 500,
-    })
-    vi.advanceTimersByTime(349)
-    fireEvent.pointerUp(mainButton, {
-      pointerId: 1,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 900,
-      clientY: 500,
-    })
-
-    await act(async () => {
-      await Promise.resolve()
-    })
-
-    expect(toastAddMock).toHaveBeenCalledWith({
-      id: "firefox-sidebar-user-action",
-      positionerProps: {
-        anchor: mainButton,
-        side: "left",
-        sideOffset: 8,
-      },
-      type: "info",
-      title: expect.anything(),
-    })
-
-    const toastContent = toastAddMock.mock.calls[0]?.[0]?.title
-    expect(toastContent).toBeDefined()
-    render(<>{toastContent}</>)
-
-    expect(screen.getByText("sidePanel.firefoxUserActionHint")).toBeInTheDocument()
-    const link = screen.getByRole("link", { name: "sidePanel.firefoxUserActionHelpText" })
-    expect(link).toHaveAttribute("href", "sidePanel.firefoxUserActionHelpUrl")
-    expect(link).toHaveAttribute("target", "_blank")
-    expect(link).toHaveAttribute("rel", "noopener noreferrer")
-  })
-
-  it("places Firefox sidebar help to the right of a left-side floating button", async () => {
-    vi.useFakeTimers()
-    vi.mocked(sendMessage).mockResolvedValue({
-      ok: false,
-      reason: "requires-extension-user-action",
-    })
-    renderFloatingButton({ clickAction: "panel", side: "left" })
-
-    const mainButton = getMainButton()
-
-    fireEvent.pointerDown(mainButton, {
-      pointerId: 1,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 20,
-      clientY: 500,
-    })
-    vi.advanceTimersByTime(349)
-    fireEvent.pointerUp(mainButton, {
-      pointerId: 1,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 20,
-      clientY: 500,
-    })
-
-    await act(async () => {
-      await Promise.resolve()
-    })
-
-    expect(toastAddMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        positionerProps: {
-          anchor: mainButton,
-          side: "right",
-          sideOffset: 8,
-        },
-      }),
-    )
   })
 
   it("keeps translate as a normal click action", () => {

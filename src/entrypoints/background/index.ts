@@ -12,6 +12,7 @@ import { openOptionsPage } from "@/utils/navigation"
 import { SessionCacheGroupRegistry } from "@/utils/session-cache/session-cache-group-registry"
 import { runAiSegmentSubtitles } from "./ai-segmentation"
 import { setupAnalyticsMessageHandlers } from "./analytics"
+import { setupSafariAuthCookieMonitor } from "./auth-cookie-monitor"
 import { dispatchBackgroundStreamPort } from "./background-stream"
 import { initializeActionIcons, registerActionIconListeners } from "./browser-action-icon"
 import { ensureInitializedConfig, isFreshInstalledConfig } from "./config"
@@ -31,11 +32,8 @@ import { initMockData } from "./mock-data"
 import { newUserGuide } from "./new-user-guide"
 import { setupNotebasePendingSaveProcessor } from "./notebase-pending-save"
 import { proxyFetch } from "./proxy-fetch"
-import { setupSidePanelMessageHandler } from "./side-panel"
 import { setUpSubtitlesTranslationQueue, setUpWebPageTranslationQueue } from "./translation-queues"
 import { translationMessage } from "./translation-signal"
-import { setupTTSPlaybackMessageHandlers } from "./tts-playback"
-import { setupUninstallSurvey } from "./uninstall-survey"
 
 export default defineBackground({
   type: "module",
@@ -81,12 +79,6 @@ export default defineBackground({
       await openOptionsPage(message.data)
     })
 
-    setupSidePanelMessageHandler({
-      extensionBrowser: browser,
-      logger,
-      registerMessageHandler: onMessage,
-    })
-
     onMessage("aiSegmentSubtitles", async (message) => {
       try {
         return await runAiSegmentSubtitles(message.data)
@@ -115,7 +107,7 @@ export default defineBackground({
     registerActionIconListeners()
 
     // Register context menu listeners synchronously
-    // This ensures listeners are registered before Chrome completes initialization
+    // This ensures listeners are registered before Safari completes initialization.
     registerContextMenuListeners()
 
     // Initialize action icons asynchronously
@@ -141,9 +133,9 @@ export default defineBackground({
     proxyFetch()
     setupHostedAiStatusHandler()
     setupNotebasePendingSaveProcessor(() => backgroundReady)
+    setupSafariAuthCookieMonitor()
     setupEdgeTTSMessageHandlers()
     setupLLMGenerateTextMessageHandlers()
-    setupTTSPlaybackMessageHandlers()
     void initMockData()
 
     // Setup on-demand iframe injection after page translation is enabled.
@@ -151,25 +143,23 @@ export default defineBackground({
 
     // i18n bootstrap for the non-React background context. Runs after the synchronous
     // listener registration above (MV3 requires listeners before the first await). The
-    // context menu and the uninstall-survey URL both resolve i18n.t at registration time,
-    // so they must be created AFTER initI18n or they freeze in the wrong language.
+    // Context-menu labels resolve i18n.t at registration time, so they must be
+    // created AFTER initI18n or they freeze in the wrong language.
     void (async () => {
       await backgroundReady
       void initializeContextMenu()
-      await setupUninstallSurvey()
     })()
 
     // Keep background-resolved strings in the selected language when it changes.
     // The context menu re-creates itself via its own config watcher
     // (registerContextMenuListeners), so here we only drive the i18next singleton and
-    // re-set the frozen (localized) uninstall-survey URL.
+    // keep the i18next singleton synchronized.
     storageAdapter.watch<Config>(CONFIG_STORAGE_KEY, (newConfig) => {
       void (async () => {
         await backgroundReady
         if (newConfig.uiLanguage === currentUiLanguage) return
         currentUiLanguage = newConfig.uiLanguage
         await setUiLanguage(newConfig.uiLanguage)
-        await setupUninstallSurvey()
       })()
     })
   },

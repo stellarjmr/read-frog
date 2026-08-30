@@ -56,13 +56,6 @@ export const SEARCH_ITEMS: SearchItem[] = [
     pageKey: "options.preference.title",
   },
   {
-    sectionId: "google-drive-sync",
-    route: "/preference",
-    titleKey: "options.preference.config.googleDrive.title",
-    descriptionKey: "options.preference.config.googleDrive.description",
-    pageKey: "options.preference.title",
-  },
-  {
     sectionId: "manual-config-sync",
     route: "/preference",
     titleKey: "options.preference.config.manualSync.title",
@@ -332,14 +325,6 @@ export const SEARCH_ITEMS: SearchItem[] = [
     descriptionKey: "options.floatingButton.display.disabledSites.description",
     pageKey: "options.floatingButton.title",
   },
-  {
-    sectionId: "floating-button-click-action",
-    route: "/floating-button",
-    titleKey: "options.floatingButton.clickAction.title",
-    descriptionKey: "options.floatingButton.clickAction.description",
-    pageKey: "options.floatingButton.title",
-  },
-
   // Selection Toolbar page
   {
     sectionId: "selection-toolbar-toggle",

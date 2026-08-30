@@ -14,11 +14,6 @@ import type {
   EdgeTTSSynthesizeWireResponse,
 } from "@/types/edge-tts"
 import type { ProxyRequest, ProxyResponse } from "@/types/proxy-fetch"
-import type {
-  TTSPlaybackStartRequest,
-  TTSPlaybackStartResponse,
-  TTSPlaybackStopRequest,
-} from "@/types/tts-playback"
 import type { HostedAiStatus } from "@/utils/hosted-ai/types"
 import type { SerializableProviderRef } from "@/utils/providers/provider-ref"
 import type { EdgeTTSVoice } from "@/utils/server/edge-tts/types"
@@ -28,17 +23,6 @@ interface ProtocolMap {
   // navigation
   openPage: (data: { url: string; active?: boolean }) => void
   openOptionsPage: (data?: { route?: `/${string}` }) => void
-  toggleSidePanel: (data?: { source?: "content-script" | "extension-user-action" }) => Promise<
-    | { ok: true; action: "opened" | "closed" }
-    | {
-        ok: false
-        reason:
-          | "missing-window"
-          | "unsupported"
-          | "toggle-failed"
-          | "requires-extension-user-action"
-      }
-  >
   // config
   getInitialConfig: () => Config | null
   // translation state
@@ -82,9 +66,7 @@ interface ProtocolMap {
   // analytics
   trackFeatureUsedEvent: (data: FeatureUsedEventProperties) => void
   // user guide
-  pinStateChanged: (data: { isPinned: boolean }) => void
   getPinState: () => boolean
-  returnPinState: (data: { isPinned: boolean }) => void
   guideDictionaryNotebaseStateChanged: (data: { completed: boolean }) => void
   completeGuideDictionaryNotebase: (data: GuideDictionaryNotebaseCompletionInput) => void
   // request
@@ -164,13 +146,6 @@ interface ProtocolMap {
   edgeTtsSynthesize: (data: EdgeTTSSynthesizeRequest) => Promise<EdgeTTSSynthesizeWireResponse>
   edgeTtsListVoices: () => Promise<EdgeTTSVoice[]>
   edgeTtsHealthCheck: () => Promise<EdgeTTSHealthStatus>
-  // tts playback
-  ttsPlaybackPrepare: () => Promise<{ ok: true }>
-  ttsPlaybackStart: (data: TTSPlaybackStartRequest) => Promise<TTSPlaybackStartResponse>
-  ttsPlaybackStop: (data: TTSPlaybackStopRequest) => Promise<{ ok: true }>
-  // offscreen internal
-  ttsOffscreenPlay: (data: TTSPlaybackStartRequest) => Promise<TTSPlaybackStartResponse>
-  ttsOffscreenStop: (data: TTSPlaybackStopRequest) => Promise<{ ok: true }>
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<ProtocolMap>()

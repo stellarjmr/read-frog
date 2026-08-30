@@ -511,9 +511,8 @@ describe("document shell notranslate exemption", () => {
 })
 
 describe("plain-text document <pre> exemption", () => {
-  // A .txt URL renders as one browser-generated <pre> holding the entire file
-  // (Chrome also gives it `white-space: pre-wrap`), so the blanket PRE block
-  // leaves such a page with nothing to translate at all.
+  // A .txt URL renders as one browser-generated <pre> holding the entire file,
+  // so the blanket PRE block leaves such a page with nothing to translate.
   const STORY_TEXT = "First hard wrapped paragraph.\n\nSecond hard wrapped paragraph."
 
   function withContentType(contentType: string, callback: () => void) {

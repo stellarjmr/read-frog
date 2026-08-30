@@ -18,6 +18,7 @@ import { i18n } from "@/utils/i18n"
 import { logger } from "@/utils/logger"
 import { sendMessage } from "@/utils/message"
 import { splitTextByUtf8Bytes } from "@/utils/server/edge-tts/chunk"
+import { DOMAudioPlaybackController } from "@/utils/tts-playback/dom-audio-controller"
 
 interface PlayAudioParams {
   text: string
@@ -138,6 +139,14 @@ export function useTextToSpeech(surface: AnalyticsSurface = ANALYTICS_SURFACE.SE
   const [totalChunks, setTotalChunks] = useState(0)
   const shouldStopRef = useRef(false)
   const activeRequestIdRef = useRef<string | null>(null)
+  const playbackControllerRef = useRef<DOMAudioPlaybackController | null>(null)
+
+  const getPlaybackController = () => {
+    playbackControllerRef.current ??= new DOMAudioPlaybackController(
+      "Safari could not play the synthesized speech",
+    )
+    return playbackControllerRef.current
+  }
 
   const stop = () => {
     shouldStopRef.current = true
@@ -145,7 +154,7 @@ export function useTextToSpeech(surface: AnalyticsSurface = ANALYTICS_SURFACE.SE
     const activeRequestId = activeRequestIdRef.current
     activeRequestIdRef.current = null
     if (activeRequestId) {
-      void sendMessage("ttsPlaybackStop", { requestId: activeRequestId }).catch(() => {})
+      playbackControllerRef.current?.stop({ requestId: activeRequestId })
     }
 
     setIsPlaying(false)
@@ -176,7 +185,6 @@ export function useTextToSpeech(surface: AnalyticsSurface = ANALYTICS_SURFACE.SE
       }
       const chunks = splitTextByUtf8Bytes(text)
       setTotalChunks(chunks.length)
-      await sendMessage("ttsPlaybackPrepare")
 
       const fetchChunkAudio = async (chunk: string) => {
         logger.info("[TextToSpeech] Fetching chunk audio", {
@@ -209,7 +217,7 @@ export function useTextToSpeech(surface: AnalyticsSurface = ANALYTICS_SURFACE.SE
       const playChunk = async (audioChunk: SynthesizedAudioChunk): Promise<boolean> => {
         setIsPlaying(true)
         try {
-          const playbackResult = await sendMessage("ttsPlaybackStart", {
+          const playbackResult = await getPlaybackController().play({
             requestId,
             audioBase64: audioChunk.audioBase64,
             contentType: audioChunk.contentType,

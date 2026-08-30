@@ -1,7 +1,6 @@
 name: 陪讀蛙
 extName: 陪讀蛙 - 翻譯與學習
-extDescription: 陪讀蛙是一款開放原始碼的瀏覽器擴充功能，能協助使用者在任何網站上深入學習語言。
-uninstallSurveyUrl: https://tally.so/r/3E9XDL
+extDescription: 陪讀蛙是一款開放原始碼的 Safari 擴充功能，能協助使用者在任何網站上深入學習語言。
 account:
   login: 登入
   webApp: 網頁應用程式
@@ -15,10 +14,6 @@ contextMenu:
   translateSelection: 翻譯「%s」
   readAloudSelection: 朗讀「%s」
   showOriginal: 顯示原文
-sidePanel:
-  firefoxUserActionHint: 在 Firefox 中，請從瀏覽器側邊欄開啟陪讀蛙。
-  firefoxUserActionHelpText: 檢視 Firefox 側邊欄說明
-  firefoxUserActionHelpUrl: https://support.mozilla.org/zh-TW/kb/use-sidebar-access-tools-and-vertical-tabs
 popup:
   theme: 主題
   autoLang: 自動偵測
@@ -354,53 +349,6 @@ options:
         urlPattern: URL 模式
     config:
       title: 設定
-      googleDrive:
-        title: Google Drive 雲端同步
-        description: 遠端設定較新時下載，本機設定較新時上傳
-        sync: 同步到 Google Drive
-        syncing: 同步中…
-        syncSuccess:
-          uploaded: 本機設定已上傳至雲端
-          downloaded: 已套用遠端設定
-          sameChanges: 本機和遠端修改一致，已同步
-          noChange: 已是最新狀態
-          unresolved: 衝突已解決並同步至本機和雲端
-        syncError: 同步失敗，請重試
-        metadataCorrupted: 同步資料損壞，已自動套用遠端設定
-        lastSyncTime: 最後同步時間
-        logout: 登出帳號
-        logoutSuccess: 已登出 Google 帳號
-        unresolved:
-          title: 設定同步解決
-          description: 本機與雲端設定存在差異，請選擇每個欄位要保留的版本。
-          resolved: 已解決
-          unresolved: 未解決
-          localValue: 本機值
-          remoteValue: 遠端值
-          useLocal: 使用本機
-          useRemote: 使用遠端
-          useAllLocal: 全選本機
-          useAllRemote: 全選遠端
-          reset: 撤銷選擇
-          progress: 已解決 $1/$2 個變更
-          confirm: 確認同步
-          cancel: 取消
-          hasUnresolvedInChildren: ⚠ 包含待解決項
-          item: 項
-          items: 項
-          unresolvedPrompt: "[待解決 - 請選擇]"
-          localLatest: 本機最新
-          remoteLatest: 遠端最新
-          bothChanged: 雙方已變更
-          localChanged: 本機已變更
-          remoteChanged: 遠端已變更
-          configValid: 設定有效
-          configInvalid: 設定無效
-          resolveToContinue: 解決衝突後繼續
-          validationAlert:
-            title: 合併後的設定存在驗證錯誤
-            description: 請調整下方差異以修復：
-          moreErrors: …還有 $1 個錯誤
       manualSync:
         title: 手動設定同步
         description: 手動匯入與匯出設定
@@ -531,7 +479,6 @@ options:
     clickAction:
       title: 點選行為
       description: 選擇點選懸浮按鈕時執行的操作
-      panel: 開啟側邊欄
       translate: 切換頁面翻譯
     closeMenu:
       disableForSite: 停用此網站

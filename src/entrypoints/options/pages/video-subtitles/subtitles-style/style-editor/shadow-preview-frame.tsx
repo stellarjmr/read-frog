@@ -83,7 +83,7 @@ export function ShadowPreviewFrame({ customCSS, children, className }: ShadowPre
       className={cn(
         // `contain: layout` makes this the containing block for any `position: fixed` inside,
         // including across the shadow boundary; `paint` plus the max height and overflow keep a
-        // runaway box from growing the settings page under it. Verified in Chrome: without them a
+        // runaway box from growing the settings page under it. Without them a
         // 100000px-tall rule pushes the CSS editor 100k pixels down the page.
         "max-h-[420px] overflow-hidden [contain:layout_paint]",
         className,

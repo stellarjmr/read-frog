@@ -1,9 +1,9 @@
 import { browser } from "#imports"
 
 /**
- * Chrome destroys the old extension instance on update, reload or reinstall,
- * but it does NOT re-inject content scripts into already-open tabs. Those
- * scripts keep running against a dead `chrome.runtime`, so the next message to
+ * Safari can destroy the old extension instance on update, reload or reinstall
+ * without re-injecting content scripts into already-open tabs. Those scripts
+ * keep running against a dead runtime, so the next message to
  * the background rejects with "Extension context invalidated." — and every
  * retry in place rejects the same way, because the channel itself is gone.
  * Only a page reload gets the tab a live content script again.
@@ -11,7 +11,7 @@ import { browser } from "#imports"
 const INVALIDATED_MESSAGE_PATTERN = /extension context (?:was |is )?invalidated/i
 
 /**
- * `browser.runtime.id` is the authoritative liveness signal: Chrome clears it
+ * `browser.runtime.id` is the authoritative liveness signal: Safari clears it
  * on the stale side of an update while leaving the `runtime` object in place.
  */
 export function isExtensionContextAlive(): boolean {

@@ -483,7 +483,7 @@ export function SelectionToolbar() {
         selectionAnchorTrackerRef.current = null
         selectionScrollTargetsRef.current = []
         // Don't hide toolbar when dropdown is open to prevent unwanted dismissal
-        // (Firefox clears selection when dropdown gains focus)
+        // (Safari can clear the selection when the dropdown gains focus.)
         if (!dropdownOpenRef.current) setIsSelectionToolbarVisible(false)
       }
     }

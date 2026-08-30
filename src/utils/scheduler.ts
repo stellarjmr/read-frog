@@ -9,10 +9,9 @@ interface SchedulerLike {
 /**
  * Yield to the event loop so input and rendering can run between work slices.
  * MV3 content scripts share the page's main thread, so long synchronous DOM
- * work freezes the page (#1881). Preference order: scheduler.yield (Chrome
- * 129+) → scheduler.postTask (Chrome 94+ / Firefox 101+) → MessageChannel
- * (everywhere; unlike setTimeout it dodges the nested-timer 4ms clamp) →
- * setTimeout(0).
+ * work freezes the page (#1881). Prefer Scheduler APIs when Safari exposes
+ * them, then MessageChannel (which avoids the nested-timer 4ms clamp), and
+ * finally setTimeout(0).
  */
 export function yieldToMain(): Promise<void> {
   const scheduler = (globalThis as { scheduler?: SchedulerLike }).scheduler

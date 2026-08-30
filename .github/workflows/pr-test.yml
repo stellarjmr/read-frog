@@ -50,5 +50,8 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Verify Safari build
+        run: pnpm verify:safari
+
       - name: Run tests
-        run: pnpm test --exclude="**/free-api.test.ts"
+        run: SKIP_FREE_API=true pnpm test

@@ -1,10 +1,6 @@
 import { backgroundFetch } from "./background-fetch-client"
 
-const EXTENSION_PROTOCOLS = new Set([
-  "chrome-extension:",
-  "moz-extension:",
-  "safari-web-extension:",
-])
+const EXTENSION_PROTOCOLS = new Set(["safari-web-extension:"])
 
 const resolvedAssetBlobCache = new Map<string, Blob>()
 const pendingAssetBlobCache = new Map<string, Promise<Blob | null>>()

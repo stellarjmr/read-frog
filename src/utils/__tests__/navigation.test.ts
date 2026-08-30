@@ -20,7 +20,7 @@ describe("navigation", () => {
 
     expect(browser.tabs.create).toHaveBeenCalledWith({
       active: true,
-      url: "chrome-extension://test-extension-id/options.html",
+      url: "safari-web-extension://test-extension-id/options.html",
     })
     expect(browser.runtime.openOptionsPage).not.toHaveBeenCalled()
   })
@@ -39,7 +39,7 @@ describe("navigation", () => {
     expect(browser.runtime.openOptionsPage).not.toHaveBeenCalled()
     expect(browser.tabs.create).toHaveBeenCalledWith({
       active: true,
-      url: "chrome-extension://test-extension-id/options.html#/custom-actions?actionId=action-1",
+      url: "safari-web-extension://test-extension-id/options.html#/custom-actions?actionId=action-1",
     })
   })
 })

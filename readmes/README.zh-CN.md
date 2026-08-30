@@ -13,7 +13,7 @@
   </a>
 </p>
 
-一款开源的 AI 驱动的浏览器语言学习扩展。<br/>
+一款专为 Safari 构建的开源 AI 驱动语言学习扩展。<br/>
 支持沉浸式翻译、文章分析、多种 AI 模型等功能。<br/>
 在浏览器中利用 AI 轻松深入地掌握语言。
 
@@ -24,13 +24,8 @@
 <!-- SHIELD GROUP -->
 
 [![Release version badge][extension-release-shield]][github-release-link]
-[![Chrome version badge][chrome-version-shield]][chrome-store-link]
-[![Edge version badge][edge-version-shield]][edge-store-link]
-[![Firefox version badge][firefox-version-shield]][firefox-store-link]<br/>
+![Safari 18+](https://img.shields.io/badge/Safari-18%2B-006CFF?style=flat-square&logo=safari&logoColor=white)<br/>
 [![Discord badge][discord-shield]][discord-link]
-[![Chrome users badge][chrome-users-shield]][chrome-store-link]
-[![Edge users badge][edge-users-shield]][edge-store-link]
-[![Firefox users badge][firefox-users-shield]][firefox-store-link]<br/>
 [![Stars badge][star-history-shield]][star-history-link]
 [![Contributors badge][contributors-shield]][contributors-link]
 ![Last commit badge][last-commit-shield]
@@ -80,11 +75,17 @@ Read Frog 的愿景是为各个级别的语言学习者提供易于使用、智�
 
 ### 下载
 
-| 浏览器  | 版本                                                                   | 下载                                                             |
-| ------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Chrome  | [![Chrome version badge][chrome-version-shield]][chrome-store-link]    | [Chrome 应用商店][chrome-store-link] 或 [中国镜像][crxsoso-link] |
-| Edge    | [![Edge version badge][edge-version-shield]][edge-store-link]          | [Microsoft Edge 插件商店][edge-store-link]                       |
-| Firefox | [![Firefox version badge][firefox-version-shield]][firefox-store-link] | [Firefox 附加组件][firefox-store-link]                           |
+此 fork **只支持 Safari 18 或更高版本**，其他浏览器的构建目标均已移除。
+
+本地构建与加载：
+
+1. 安装 Node.js 26 和 pnpm 11。
+2. 运行 `pnpm install --frozen-lockfile`。
+3. 运行 `pnpm build`，然后运行 `pnpm verify:safari`。
+4. 在 **Safari > 设置 > 高级** 中启用 **显示网页开发者功能**。
+5. 打开 Safari 设置中的 **开发者** 标签页，点击 **添加临时扩展**，然后选中 `.output/safari-mv3`。
+
+发布压缩包的名称为 `read-frogextension-*-safari.zip`，可直接在 Safari 中选择。Safari 界面的最新说明请参考 Apple 的 [运行 Safari Web Extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) 文档。若要永久分发，则需要使用 Apple 的 Safari 扩展打包流程和 Xcode。
 
 ### 社区
 
@@ -318,34 +319,24 @@ ReadFrog 采用 GPLv3 和商业许可双重授权。
 <!-- LINK GROUP -->
 
 [back-to-top]: https://img.shields.io/badge/-回到顶部-151515?style=flat-square
-[chrome-store-link]: https://chromewebstore.google.com/detail/read-frog-open-source-ai/modkelfkcfjpgbfmnbnllalkiogfofhb
-[chrome-users-shield]: https://img.shields.io/chrome-web-store/users/modkelfkcfjpgbfmnbnllalkiogfofhb?style=flat-square&label=Chrome%20用户&color=yellow&labelColor=black
-[chrome-version-shield]: https://img.shields.io/chrome-web-store/v/modkelfkcfjpgbfmnbnllalkiogfofhb?style=flat-square&label=Chrome%20版本&labelColor=black&color=yellow
 [contributors-link]: https://github.com/mengxi-ream/read-frog/graphs/contributors
 [contributors-shield]: https://img.shields.io/github/contributors/mengxi-ream/read-frog?style=flat-square&labelColor=black
-[crxsoso-link]: https://www.crxsoso.com/webstore/detail/modkelfkcfjpgbfmnbnllalkiogfofhb
 [chinese-shield]: https://img.shields.io/badge/%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-gray?style=flat-square
 [discord-link]: https://discord.gg/ej45e3PezJ
 [discord-shield]: https://img.shields.io/discord/1371229720942874646?style=flat-square&label=Discord&logo=discord&logoColor=white&color=5865F2&labelColor=black
 [discord-shield-badge]: https://img.shields.io/badge/聊天-Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white&labelColor=black
-[edge-store-link]: https://microsoftedge.microsoft.com/addons/detail/read-frog-open-source-a/cbcbomlgikfbdnoaohcjfledcoklcjbo
 [english-shield]: https://img.shields.io/badge/English-gray?style=flat-square
-[firefox-store-link]: https://addons.mozilla.org/firefox/addon/read-frog-open-ai-translator/
-[firefox-version-shield]: https://img.shields.io/amo/v/read-frog-open-ai-translator?style=flat-square&label=Firefox%20版本&labelColor=black&color=orange
-[firefox-users-shield]: https://img.shields.io/amo/users/read-frog-open-ai-translator?style=flat-square&label=Firefox%20用户&color=orange&labelColor=black
-[edge-users-shield]: https://img.shields.io/badge/dynamic/json?style=flat-square&logo=microsoft-edge&label=Edge%20用户&query=%24.activeInstallCount&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fcbcbomlgikfbdnoaohcjfledcoklcjbo&labelColor=black
-[edge-version-shield]: https://img.shields.io/badge/dynamic/json?style=flat-square&logo=microsoft-edge&label=Edge%20版本&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fcbcbomlgikfbdnoaohcjfledcoklcjbo&labelColor=black&prefix=v
-[extension-release-shield]: https://img.shields.io/github/package-json/v/mengxi-ream/read-frog?filename=package.json&style=flat-square&label=最新版本&color=brightgreen&labelColor=black
-[github-release-link]: https://github.com/mengxi-ream/read-frog/releases
-[github-star-link]: https://github.com/mengxi-ream/read-frog/stargazers
+[extension-release-shield]: https://img.shields.io/github/package-json/v/stellarjmr/read-frog?filename=package.json&style=flat-square&label=最新版本&color=brightgreen&labelColor=black
+[github-release-link]: https://github.com/stellarjmr/read-frog/releases
+[github-star-link]: https://github.com/stellarjmr/read-frog/stargazers
 [image-banner]: ../assets/banner-zh.png
 [sponsor-image]: https://cdn.jsdelivr.net/gh/mengxi-ream/static/sponsorkit/sponsors.svg
 [image-star]: ../assets/star.png
-[issues-link]: https://github.com/mengxi-ream/read-frog/issues
-[issues-shield]: https://img.shields.io/github/issues/mengxi-ream/read-frog?style=flat-square&labelColor=black
+[issues-link]: https://github.com/stellarjmr/read-frog/issues
+[issues-shield]: https://img.shields.io/github/issues/stellarjmr/read-frog?style=flat-square&labelColor=black
 [japanese-shield]: https://img.shields.io/badge/%E6%97%A5%E6%9C%AC%E8%AA%9E-gray?style=flat-square
 [korean-shield]: https://img.shields.io/badge/%ED%95%9C%EA%B5%AD%EC%96%B4-gray?style=flat-square
-[last-commit-shield]: https://img.shields.io/github/last-commit/mengxi-ream/read-frog?style=flat-square&label=commit&labelColor=black
+[last-commit-shield]: https://img.shields.io/github/last-commit/stellarjmr/read-frog?style=flat-square&label=commit&labelColor=black
 [russian-shield]: https://img.shields.io/badge/%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-gray?style=flat-square
 [sponsor-link]: https://github.com/sponsors/mengxi-ream
 [sponsor-shield]: https://img.shields.io/github/sponsors/mengxi-ream?style=flat-square&label=赞助&color=EA4AAA&labelColor=black

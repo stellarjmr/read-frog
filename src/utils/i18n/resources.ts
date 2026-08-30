@@ -45,7 +45,7 @@ interface LocaleTree {
  *
  * Intentionally left untouched:
  *   - existing named tokens like `{{targetLanguage}}` (LLM prompt templates; no `$`)
- *   - Chrome context-menu placeholders like `%s`
+ *   - extension context-menu placeholders like `%s`
  */
 function convertPlaceholders(value: string): string {
   return value.replace(/\$\$|\$(\d)/g, (_match, digit: string | undefined) =>
