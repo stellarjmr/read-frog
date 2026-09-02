@@ -37,6 +37,19 @@ async function containsFiles(relativePath) {
   }
 }
 
+async function listFiles(relativePath) {
+  const files = []
+  const entries = await readdir(path.join(rootDirectory, relativePath), { withFileTypes: true })
+
+  for (const entry of entries) {
+    const entryPath = path.join(relativePath, entry.name)
+    if (entry.isDirectory()) files.push(...(await listFiles(entryPath)))
+    else if (entry.isFile()) files.push(entryPath)
+  }
+
+  return files
+}
+
 const packageJson = JSON.parse(await read("package.json"))
 const scripts = packageJson.scripts ?? {}
 
@@ -78,6 +91,27 @@ check(!/browser_specific_settings[\s\S]*?gecko\s*:/.test(wxtConfig), "Firefox ge
 
 for (const entrypoint of ["src/entrypoints/offscreen", "src/entrypoints/sidepanel"]) {
   check(!(await containsFiles(entrypoint)), `unsupported Safari entrypoint exists: ${entrypoint}`)
+}
+
+const sourceFiles = (await listFiles("src")).filter((file) =>
+  /\.(?:html|js|jsx|ts|tsx)$/.test(file),
+)
+const unsupportedSourcePatterns = [
+  [/\b(?:browser|chrome)\.(?:identity|offscreen|sidePanel)\b/, "unsupported extension API"],
+  [/\b(?:browser|chrome)\.runtime\.setUninstallURL\b/, "unsupported uninstall URL API"],
+  [/(?:chrome|moz)-extension:\/\//, "non-Safari extension URL"],
+  [/import\.meta\.env\.(?:CHROME|EDGE|FIREFOX|OPERA)\b/, "non-Safari compile-time browser branch"],
+  [
+    /import\.meta\.env\.BROWSER\s*===?\s*["'](?:chrome|edge|firefox|opera)["']/,
+    "non-Safari runtime browser branch",
+  ],
+]
+
+for (const file of sourceFiles) {
+  const source = await read(file)
+  for (const [pattern, description] of unsupportedSourcePatterns) {
+    check(!pattern.test(source), `${description} is present in ${file}`)
+  }
 }
 
 const changesetConfig = JSON.parse(await read(".changeset/config.json"))
