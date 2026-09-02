@@ -9,6 +9,8 @@ lerna-debug.log*
 
 node_modules
 .output
+build/
+dist/
 stats.html
 stats-*.html
 stats-*.json

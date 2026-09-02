@@ -77,7 +77,17 @@ Whether you are a user or a developer, Read Frog will be an important part of yo
 
 This fork supports **Safari 18 or later only**. Other browser build targets have been removed.
 
-To build and load it locally:
+The preferred persistent installation is Homebrew:
+
+```bash
+brew install --cask stellarjmr/tool/read-frog
+```
+
+Open **Read Frog** once after installation, then enable it in **Safari > Settings > Extensions** and grant the desired website access. Upgrade later with `brew upgrade --cask stellarjmr/tool/read-frog`.
+
+The cask is published automatically after the first Developer ID-signed and notarized release. Until that release gate is green, see [STATUS.md](./STATUS.md) rather than using an unsigned build as a permanent installation.
+
+For development, build and load it temporarily:
 
 1. Install Node.js 26 and pnpm 11.
 2. Run `pnpm install --frozen-lockfile`.
@@ -85,7 +95,7 @@ To build and load it locally:
 4. In **Safari > Settings > Advanced**, enable **Show features for web developers**.
 5. Open the **Developer** tab in Safari Settings, click **Add Temporary Extension**, then select `.output/safari-mv3`.
 
-Release archives are named `read-frogextension-*-safari.zip` and can be selected directly. See Apple's [Running your Safari web extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) guide for the current Safari UI. Packaging for permanent distribution requires Apple's Safari extension packaging workflow and Xcode.
+Raw development archives are named `read-frogextension-*-safari.zip`. See Apple's [Running your Safari web extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) guide for temporary loading. Stable Homebrew releases use a signed and notarized `Read-Frog-*-macos.zip` app container; see [HOMEBREW_RELEASE.md](./HOMEBREW_RELEASE.md).
 
 ### Community
 

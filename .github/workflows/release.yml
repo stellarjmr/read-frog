@@ -7,8 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing release tag to rebuild assets for (e.g., v1.30.1)"
-        required: true
+        description: "Existing release tag to rebuild (leave empty to run Changesets)"
+        required: false
+        default: ""
         type: string
 
 env:
@@ -16,7 +17,9 @@ env:
   WXT_POSTHOG_HOST: ${{ secrets.WXT_POSTHOG_HOST || vars.WXT_POSTHOG_HOST }}
   WXT_ANALYTICS_DAILY_FEATURE_CACHE_ENABLED: "true"
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.tag || 'changesets' }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -24,32 +27,68 @@ permissions:
 
 jobs:
   release:
-    name: Release Safari Extension
+    name: Prepare release metadata
     runs-on: ubuntu-latest
     env:
       HUSKY: 0
-    steps:
-      - name: Checkout Repo
-        if: github.event_name != 'workflow_dispatch'
-        uses: actions/checkout@v7
+    outputs:
+      should_package: ${{ steps.metadata.outputs.should_package }}
+      tag: ${{ steps.metadata.outputs.tag }}
 
-      - name: Checkout Release Tag
-        if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout fork main
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.inputs.tag }}
+          ref: main
+          fetch-depth: 0
 
       - name: Setup pnpm and Node.js
+        if: inputs.tag == ''
         uses: pnpm/setup@v2
         with:
           cache: true
           install: false
 
-      - name: Install Dependencies
+      - name: Install dependencies
+        if: inputs.tag == ''
         run: pnpm install --frozen-lockfile
 
-      - name: Create Release Pull Request or Tag
-        if: github.event_name != 'workflow_dispatch'
+      - name: Detect an unpublished release candidate
+        if: inputs.tag == ''
+        id: candidate
+        shell: bash
+        run: |
+          version=$(node -p 'require("./package.json").version')
+          changeset_count=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
+          if [ "$changeset_count" = "0" ] && ! git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            echo "needs_signing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "needs_signing=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Require signing and notarization configuration before publishing
+        if: steps.candidate.outputs.needs_signing == 'true'
+        shell: bash
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          APPLE_NOTARY_PRIVATE_KEY: ${{ secrets.APPLE_NOTARY_PRIVATE_KEY }}
+        run: |
+          missing=0
+          for name in MACOS_CERTIFICATE_P12 MACOS_CERTIFICATE_PASSWORD MACOS_SIGNING_IDENTITY APPLE_TEAM_ID APPLE_NOTARY_KEY_ID APPLE_NOTARY_ISSUER_ID APPLE_NOTARY_PRIVATE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required release secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Create release pull request or tag
+        if: inputs.tag == ''
         id: changesets
         uses: changesets/action@v2.1.0
         with:
@@ -61,86 +100,133 @@ jobs:
         env:
           SKIP_FREE_API: true
 
-      - name: Send Discord Notification
-        if: steps.changesets.outputs.published == 'true'
+      - name: Resolve package request
+        id: metadata
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          PUBLISHED: ${{ steps.changesets.outputs.published }}
+          PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.published-packages }}
         run: |
-          VERSION=$(echo '${{ steps.changesets.outputs.published-packages }}' | jq -r '.[0].version')
-          TAG="v$VERSION"
-          RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/$TAG"
-
-          # Get release notes
-          RELEASE_DATA=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG")
-          RELEASE_NOTES=$(echo "$RELEASE_DATA" | jq -r '.body // "No release notes available"')
-
-          # Clean up release notes
-          if [ -n "$RELEASE_NOTES" ] && [ "$RELEASE_NOTES" != "No release notes available" ]; then
-            RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed 's/<!--[^>]*-->//g')
-            RELEASE_NOTES=$(echo "$RELEASE_NOTES" | \
-              sed 's/^## \(.*\)$/**\1**/g' | \
-              sed 's/^### \(.*\)$/▸ **\1**/g' | \
-              sed 's/^#### \(.*\)$/  • **\1**/g')
-            RELEASE_NOTES=$(echo "$RELEASE_NOTES" | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
-            if [ ${#RELEASE_NOTES} -gt 800 ]; then
-              RELEASE_NOTES=$(echo "$RELEASE_NOTES" | head -c 800)
-              RELEASE_NOTES="${RELEASE_NOTES}..."
-            fi
-          fi
-
-          # Build Discord payload
-          TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%S.000Z)
-          if [ -n "$RELEASE_NOTES" ] && [ "$RELEASE_NOTES" != "No release notes available" ]; then
-            FIELDS_JSON=$(jq -n --arg tag "$TAG" --arg notes "$RELEASE_NOTES" \
-              '[{"name": "🏷️ Tag", "value": ("`" + $tag + "`"), "inline": true}, {"name": "📝 Release Notes", "value": $notes, "inline": false}]')
+          if [ -n "$INPUT_TAG" ]; then
+            echo "should_package=true" >> "$GITHUB_OUTPUT"
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          elif [ "$PUBLISHED" = "true" ]; then
+            version=$(echo "$PUBLISHED_PACKAGES" | jq -r '.[0].version')
+            echo "should_package=true" >> "$GITHUB_OUTPUT"
+            echo "tag=v$version" >> "$GITHUB_OUTPUT"
           else
-            FIELDS_JSON=$(jq -n --arg tag "$TAG" \
-              '[{"name": "🏷️ Tag", "value": ("`" + $tag + "`"), "inline": true}]')
+            echo "should_package=false" >> "$GITHUB_OUTPUT"
+            echo "tag=" >> "$GITHUB_OUTPUT"
           fi
 
-          DISCORD_PAYLOAD=$(jq -n \
-            --arg version "$VERSION" \
-            --arg url "$RELEASE_URL" \
-            --argjson fields "$FIELDS_JSON" \
-            --arg timestamp "$TIMESTAMP" \
-            '{
-              embeds: [{
-                title: "🐸 Read Frog Release!",
-                description: ("**Read Frog** version `" + $version + "` has been released!"),
-                url: $url,
-                color: 48253,
-                fields: $fields,
-                footer: { text: "GitHub Actions", icon_url: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" },
-                timestamp: $timestamp
-              }]
-            }')
+  package:
+    name: Sign, notarize, and publish Safari app
+    needs: release
+    if: needs.release.outputs.should_package == 'true'
+    runs-on: macos-latest
+    env:
+      HUSKY: 0
+      MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+      MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+      APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+      APPLE_NOTARY_PRIVATE_KEY: ${{ secrets.APPLE_NOTARY_PRIVATE_KEY }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
-          # Send to Discord
-          RESPONSE=$(curl -s -w "%{http_code}" -H "Content-Type: application/json" -X POST -d "$DISCORD_PAYLOAD" ${{ secrets.DISCORD_WEBHOOK_URL }})
-          HTTP_CODE=$(echo "$RESPONSE" | tail -c 4)
-          if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-            echo "✅ Discord notification sent"
-          else
-            echo "❌ Discord notification failed (HTTP $HTTP_CODE)"
-          fi
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release.outputs.tag }}
 
-      - name: Build and Zip Extension
-        if: steps.changesets.outputs.published == 'true' || github.event_name ==
-          'workflow_dispatch'
+      - name: Setup pnpm and Node.js
+        uses: pnpm/setup@v2
+        with:
+          cache: true
+          install: false
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate source and build WebExtension archives
         run: |
+          pnpm exec nx fmt:check
+          pnpm lint
+          SKIP_FREE_API=true pnpm test
           pnpm zip
           pnpm verify:safari
 
-      - name: Upload Extension Zip to Release
-        if: steps.changesets.outputs.published == 'true' || github.event_name ==
-          'workflow_dispatch'
+      - name: Validate release secrets
+        shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TAG="${{ github.event.inputs.tag }}"
-          else
-            VERSION=$(echo '${{ steps.changesets.outputs.published-packages }}' | jq -r '.[0].version')
-            TAG="v$VERSION"
-          fi
+          missing=0
+          for name in MACOS_CERTIFICATE_P12 MACOS_CERTIFICATE_PASSWORD MACOS_SIGNING_IDENTITY APPLE_TEAM_ID APPLE_NOTARY_KEY_ID APPLE_NOTARY_ISSUER_ID APPLE_NOTARY_PRIVATE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required release secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
 
-          gh release upload "$TAG" .output/*-safari.zip .output/*-sources.zip --clobber
+      - name: Import Developer ID certificate
+        shell: bash
+        run: |
+          certificate_path="$RUNNER_TEMP/developer-id.p12"
+          keychain_path="$RUNNER_TEMP/read-frog-signing.keychain-db"
+          keychain_password="read-frog-${{ github.run_id }}-${{ github.run_attempt }}"
+
+          printf '%s' "$MACOS_CERTIFICATE_P12" | /usr/bin/base64 -D > "$certificate_path"
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" -k "$keychain_path" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain_path"
+          security list-keychains -d user -s "$keychain_path"
+
+      - name: Prepare App Store Connect notary key
+        shell: bash
+        run: |
+          notary_key_path="$RUNNER_TEMP/AuthKey_${APPLE_NOTARY_KEY_ID}.p8"
+          printf '%s' "$APPLE_NOTARY_PRIVATE_KEY" > "$notary_key_path"
+          chmod 600 "$notary_key_path"
+          echo "APPLE_NOTARY_KEY_PATH=$notary_key_path" >> "$GITHUB_ENV"
+
+      - name: Build signed and notarized macOS app
+        id: macos
+        run: node scripts/package-safari-app.mjs --signed --notarize
+
+      - name: Render Homebrew cask metadata
+        run: |
+          node scripts/render-homebrew-cask.mjs \
+            --version "${{ steps.macos.outputs.version }}" \
+            --sha256 "${{ steps.macos.outputs.sha256 }}" \
+            --output dist/read-frog.rb
+
+      - name: Upload Safari and Homebrew release assets
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ needs.release.outputs.tag }}" \
+            .output/*-safari.zip \
+            .output/*-sources.zip \
+            "${{ steps.macos.outputs.artifact_path }}" \
+            dist/read-frog.rb \
+            --clobber
+
+      - name: Send optional Discord notification
+        if: env.DISCORD_WEBHOOK_URL != ''
+        shell: bash
+        run: |
+          jq -n \
+            --arg tag "${{ needs.release.outputs.tag }}" \
+            --arg url "https://github.com/${{ github.repository }}/releases/tag/${{ needs.release.outputs.tag }}" \
+            '{content: ("Read Frog " + $tag + " is signed, notarized, and ready: " + $url)}' \
+            | curl --fail --silent --show-error \
+                -H "Content-Type: application/json" \
+                -X POST \
+                --data-binary @- \
+                "$DISCORD_WEBHOOK_URL"

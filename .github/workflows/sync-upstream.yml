@@ -1,0 +1,205 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    - cron: "17 8 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: sync-upstream-main
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: write
+  issues: write
+
+jobs:
+  sync:
+    name: Merge and validate upstream main
+    runs-on: macos-latest
+    env:
+      HUSKY: 0
+      UPSTREAM_URL: https://github.com/mengxi-ream/read-frog.git
+
+    steps:
+      - name: Checkout fork main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge upstream into candidate
+        id: merge
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream "$UPSTREAM_URL" 2>/dev/null || git remote set-url upstream "$UPSTREAM_URL"
+          git fetch --prune upstream main
+
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git checkout -B automation/upstream-sync
+          set +e
+          git merge --no-edit upstream/main
+          merge_status=$?
+          set -e
+
+          if [ "$merge_status" -ne 0 ]; then
+            conflict_files=$(git diff --name-only --diff-filter=U | paste -sd, -)
+            git merge --abort
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+            echo "conflict_files=$conflict_files" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "conflict=false" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Push inspectable candidate branch
+        id: candidate_push
+        if: steps.merge.outputs.changed == 'true' && steps.merge.outputs.conflict == 'false'
+        continue-on-error: true
+        run: git push --force origin HEAD:refs/heads/automation/upstream-sync
+
+      - name: Setup pnpm and Node.js
+        if: steps.merge.outputs.changed == 'true' && steps.merge.outputs.conflict == 'false'
+        uses: pnpm/setup@v2
+        with:
+          cache: true
+          install: false
+
+      - name: Validate Safari fork and app container
+        id: validate
+        if: steps.merge.outputs.changed == 'true' && steps.merge.outputs.conflict == 'false'
+        continue-on-error: true
+        shell: bash
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec nx fmt:check
+          pnpm lint
+          pnpm verify:safari-policy
+          pnpm build
+          pnpm verify:safari
+          SKIP_FREE_API=true pnpm test
+          node scripts/package-safari-app.mjs --unsigned
+
+      - name: Promote validated merge to main
+        id: promote
+        if: steps.validate.outcome == 'success' && steps.candidate_push.outcome == 'success'
+        continue-on-error: true
+        run: git push origin HEAD:main
+
+      - name: Open or update sync failure issue
+        if: >-
+          steps.merge.outputs.conflict == 'true' ||
+          steps.candidate_push.outcome == 'failure' ||
+          steps.validate.outcome == 'failure' ||
+          steps.promote.outcome == 'failure'
+        uses: actions/github-script@v9
+        env:
+          CONFLICT_FILES: ${{ steps.merge.outputs.conflict_files }}
+          CANDIDATE_SHA: ${{ steps.merge.outputs.candidate_sha }}
+          CANDIDATE_PUSH_OUTCOME: ${{ steps.candidate_push.outcome }}
+          VALIDATION_OUTCOME: ${{ steps.validate.outcome }}
+          PROMOTION_OUTCOME: ${{ steps.promote.outcome }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = "chore(sync): upstream main needs Safari port work";
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const candidateUrl = `${context.serverUrl}/${owner}/${repo}/tree/automation/upstream-sync`;
+            const conflictFiles = process.env.CONFLICT_FILES || "none reported";
+            const body = [
+              "The scheduled upstream merge was not promoted to `main`.",
+              "",
+              `- Run: ${runUrl}`,
+              `- Candidate commit: \`${process.env.CANDIDATE_SHA || "not created"}\``,
+              `- Candidate branch: ${candidateUrl}`,
+              `- Merge conflicts: ${conflictFiles}`,
+              `- Candidate push: ${process.env.CANDIDATE_PUSH_OUTCOME || "skipped"}`,
+              `- Safari validation: ${process.env.VALIDATION_OUTCOME || "skipped"}`,
+              `- Main promotion: ${process.env.PROMOTION_OUTCOME || "skipped"}`,
+              "",
+              "Resolve this by preserving upstream product logic and reapplying the Safari adapters documented in `STATUS.md`. Do not bypass `pnpm verify:safari` or publish non-Safari artifacts.",
+            ].join("\n");
+
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: "upstream-sync" });
+            } catch {
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: "upstream-sync",
+                color: "006CFF",
+                description: "Automated upstream merge needs Safari compatibility work",
+              });
+            }
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              labels: "upstream-sync",
+              per_page: 100,
+            });
+            const existing = issues.find((issue) => issue.title === title);
+
+            if (existing) {
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, body });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body, labels: ["upstream-sync"] });
+            }
+
+      - name: Close resolved sync failure issue
+        if: steps.promote.outcome == 'success'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              labels: "upstream-sync",
+              per_page: 100,
+            });
+            for (const issue of issues) {
+              if (issue.title === "chore(sync): upstream main needs Safari port work") {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  body: `Resolved by validated sync ${process.env.GITHUB_SHA}.`,
+                });
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: issue.number,
+                  state: "closed",
+                });
+              }
+            }
+
+      - name: Refresh Changesets release workflow
+        if: steps.promote.outcome == 'success'
+        run: gh workflow run release.yml --ref main
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Fail unresolved sync
+        if: >-
+          steps.merge.outputs.conflict == 'true' ||
+          steps.candidate_push.outcome == 'failure' ||
+          steps.validate.outcome == 'failure' ||
+          steps.promote.outcome == 'failure'
+        run: exit 1

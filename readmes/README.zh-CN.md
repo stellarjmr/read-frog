@@ -77,7 +77,17 @@ Read Frog 的愿景是为各个级别的语言学习者提供易于使用、智�
 
 此 fork **只支持 Safari 18 或更高版本**，其他浏览器的构建目标均已移除。
 
-本地构建与加载：
+推荐通过 Homebrew 永久安装：
+
+```bash
+brew install --cask stellarjmr/tool/read-frog
+```
+
+安装后先打开一次 **Read Frog**，再前往 **Safari > 设置 > 扩展** 启用它并授予所需的网站访问权限。之后可运行 `brew upgrade --cask stellarjmr/tool/read-frog` 升级。
+
+首个 Developer ID 签名并通过 Apple 公证的版本发布后，cask 才会自动上线。在此门禁通过前，请查看 [STATUS.md](../STATUS.md)，不要把未签名构建当作永久安装版本。
+
+开发时可进行本地构建与临时加载：
 
 1. 安装 Node.js 26 和 pnpm 11。
 2. 运行 `pnpm install --frozen-lockfile`。
@@ -85,7 +95,7 @@ Read Frog 的愿景是为各个级别的语言学习者提供易于使用、智�
 4. 在 **Safari > 设置 > 高级** 中启用 **显示网页开发者功能**。
 5. 打开 Safari 设置中的 **开发者** 标签页，点击 **添加临时扩展**，然后选中 `.output/safari-mv3`。
 
-发布压缩包的名称为 `read-frogextension-*-safari.zip`，可直接在 Safari 中选择。Safari 界面的最新说明请参考 Apple 的 [运行 Safari Web Extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) 文档。若要永久分发，则需要使用 Apple 的 Safari 扩展打包流程和 Xcode。
+原始开发压缩包的名称为 `read-frogextension-*-safari.zip`。临时加载方法请参考 Apple 的 [运行 Safari Web Extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) 文档。稳定的 Homebrew 版本使用已签名并公证的 `Read-Frog-*-macos.zip` app 容器，具体流程见 [HOMEBREW_RELEASE.md](../HOMEBREW_RELEASE.md)。
 
 ### 社区
 

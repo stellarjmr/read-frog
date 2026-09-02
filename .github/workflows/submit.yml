@@ -1,27 +1,30 @@
-name: Package Safari Extension
+name: Test Safari App Packaging
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release.yml"
+      - ".github/workflows/submit.yml"
+      - "scripts/package-safari-app.mjs"
+      - "scripts/render-homebrew-cask.mjs"
+      - "scripts/verify-safari-policy.mjs"
+      - "wxt.config.ts"
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag to package (e.g., v1.20.0)"
-        required: true
-        type: string
 
 env:
-  WXT_POSTHOG_API_KEY: ${{ secrets.WXT_POSTHOG_API_KEY || vars.WXT_POSTHOG_API_KEY }}
-  WXT_POSTHOG_HOST: ${{ secrets.WXT_POSTHOG_HOST || vars.WXT_POSTHOG_HOST }}
-  WXT_ANALYTICS_DAILY_FEATURE_CACHE_ENABLED: "true"
+  WXT_SKIP_ENV_VALIDATION: true
+  HUSKY: 0
 
 jobs:
   package:
-    name: Package Safari WebExtension
+    name: Build unsigned app-container smoke artifact
     runs-on: macos-latest
+
     steps:
-      - name: Checkout Release Tag
+      - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          ref: ${{ inputs.tag }}
 
       - name: Setup pnpm and Node.js
         uses: pnpm/setup@v2
@@ -29,18 +32,15 @@ jobs:
           cache: true
           install: false
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run Tests
-        run: SKIP_FREE_API=true pnpm test
+      - name: Build and verify unsigned app container
+        run: pnpm package:macos:unsigned
 
-      - name: Build and Zip Extension
-        run: |
-          pnpm zip
-          pnpm verify:safari
-
-      - name: Upload Extension Zip to Release
-        run: gh release upload "${{ inputs.tag }}" .output/*-safari.zip .output/*-sources.zip --clobber
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Upload smoke-test app
+        uses: actions/upload-artifact@v7
+        with:
+          name: read-frog-macos-unsigned
+          path: dist/*-macos-unsigned.zip
+          if-no-files-found: error
