@@ -136,6 +136,14 @@ check(
   "release workflow must approve checks only for its trusted Changesets pull request",
 )
 check(
+  releaseWorkflow.includes('git config user.name "stellarjmr"') &&
+    releaseWorkflow.includes(
+      'git config user.email "219479939+stellarjmr@users.noreply.github.com"',
+    ) &&
+    releaseWorkflow.includes("push-with-git-cli: true"),
+  "Changesets commits and tags must use the stellarjmr identity",
+)
+check(
   releaseWorkflow.includes("xcrun notarytool history"),
   "release workflow must authenticate with the notary service before tagging",
 )

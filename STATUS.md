@@ -22,22 +22,30 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
   smoke workflow. Downloaded artifact evidence confirms a Universal
   `Read Frog.app`, the `com.zhimin.readfrog` / `.Extension` bundle hierarchy,
   the embedded Safari MV3 manifest, and valid ad-hoc deep signatures. Verified
-  run: `33631487209` on commit `26fe3adb`.
+  run: `33641727537` on commit `d63730b7`. The same run also exercised an
+  ephemeral signing identity, hardened runtime, exact certificate cleanup, and
+  the unsigned diagnostic build without an interactive keychain prompt.
 - GitHub release automation covers raw WebExtension ZIPs plus the signed,
   notarized app and cask contract, but the stable macOS app/Homebrew release is
   not yet publishable without credentials. Changesets PR #1 has been refreshed
   for `@read-frog/extension@2.0.0` and contains every current upstream and
-  Safari-distribution changeset. Its Safari build and full test checks passed in
-  run `33632589348` after the repository's first-contributor approval.
+  Safari-distribution changeset. Release planning passed in run `33642932720`;
+  credential validation and publication correctly remained skipped while the
+  seven Apple secrets are absent.
 - `stellarjmr/homebrew-tool` exists and is already tapped locally. It does not
   yet contain a `read-frog` cask; its verified-release polling workflow is
-  deployed at `d509149`. Its no-release path passed again in run `33633131788`,
+  deployed at `8267b291`. Its no-release path passed again in run `33633131788`,
   and the first-cask/update detection is covered separately, so it safely skips
   publishing until signed and notarized assets exist.
-- All local fork-authored commits now use the `stellarjmr` GitHub identity.
-  Remote fork and tap refs still contain the superseded author metadata;
-  refreshed GitHub CLI authentication is required before the replacement
-  histories and additional hardening can be pushed and verified remotely.
+- Pull request #2 merged at `d63730b7` after its full test/build and macOS app
+  packaging checks passed in runs `33642339245` and `33642339171`.
+- Every commit reachable from the active fork-only `main` and
+  `feat/safari-only` histories, plus every Read Frog tap commit, uses
+  `stellarjmr <219479939+stellarjmr@users.noreply.github.com>` as both author
+  and committer. Upstream-owned history retains its original authors. Sync,
+  Changesets, and tap automation are configured to use the same identity for
+  future commits and tags; GitHub-generated workflow events remain attributed
+  to the GitHub Actions system actor.
 
 ## Intentional Safari Divergence
 
@@ -76,9 +84,8 @@ secrets configured. Apple requires a containing macOS app, and stable
 distribution outside the Mac App Store requires Developer ID signing and
 notarization.
 
-Local GitHub CLI authentication for `stellarjmr` has expired. Run
-`gh auth login -h github.com -p https -s repo,workflow` before pushing the
-pending hardening commits or configuring secrets.
+GitHub CLI authentication and Git HTTPS credential integration are active for
+`stellarjmr`; only the Apple signing/notary credentials remain outstanding.
 
 Configure these Actions secrets in `stellarjmr/read-frog` before merging the
 release PR. Use the locally validating `pnpm configure:release-secrets` helper

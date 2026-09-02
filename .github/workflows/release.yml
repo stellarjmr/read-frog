@@ -177,6 +177,13 @@ jobs:
         if: inputs.tag == ''
         run: pnpm install --frozen-lockfile
 
+      - name: Configure release commit identity
+        if: inputs.tag == ''
+        shell: bash
+        run: |
+          git config user.name "stellarjmr"
+          git config user.email "219479939+stellarjmr@users.noreply.github.com"
+
       - name: Create release pull request or tag
         if: inputs.tag == ''
         id: changesets
@@ -187,6 +194,7 @@ jobs:
           pr-title: "chore(release): version packages"
           publish-script: pnpm run release
           create-github-releases: true
+          push-with-git-cli: true
         env:
           SKIP_FREE_API: true
 
