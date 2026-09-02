@@ -35,8 +35,81 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build and verify Safari WebExtension
+        run: |
+          pnpm build
+          pnpm verify:safari
+
+      - name: Create ephemeral code-signing identity
+        shell: bash
+        run: |
+          signing_directory="$RUNNER_TEMP/read-frog-signing-smoke"
+          keychain_path="$signing_directory/self-signed.keychain-db"
+          keychain_password="read-frog-ci-${{ github.run_id }}-${{ github.run_attempt }}"
+          identity="Read Frog CI Code Signing"
+
+          mkdir -p "$signing_directory"
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -keyout "$signing_directory/key.pem" \
+            -out "$signing_directory/cert.pem" \
+            -subj "/CN=$identity/OU=READFROGCI/O=Read Frog CI/C=US" \
+            -addext "basicConstraints=critical,CA:true" \
+            -addext "keyUsage=critical,digitalSignature,keyCertSign" \
+            -addext "extendedKeyUsage=codeSigning"
+          openssl pkcs12 -export \
+            -inkey "$signing_directory/key.pem" \
+            -in "$signing_directory/cert.pem" \
+            -out "$signing_directory/cert.p12" \
+            -passout "pass:$keychain_password"
+
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$signing_directory/cert.p12" \
+            -k "$keychain_path" \
+            -P "$keychain_password" \
+            -A -t cert -f pkcs12
+          security add-trusted-cert -r trustRoot \
+            -k "$keychain_path" \
+            "$signing_directory/cert.pem"
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s -k "$keychain_password" \
+            "$keychain_path"
+          security list-keychains -d user -s "$keychain_path"
+
+          identities=$(security find-identity -v -p codesigning "$keychain_path")
+          grep -Fq "$identity" <<< "$identities"
+
+          echo "MACOS_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
+          echo "APPLE_TEAM_ID=READFROGCI" >> "$GITHUB_ENV"
+
+      - name: Exercise signed Xcode build path
+        shell: bash
+        run: |
+          node scripts/package-safari-app.mjs --signed
+
+          app_path="build/safari-app/release/Read Frog.app"
+          extension_path=$(find "$app_path/Contents/PlugIns" -name '*.appex' -type d -print -quit)
+          test -d "$app_path"
+          test -n "$extension_path"
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          codesign --display --verbose=4 "$app_path" 2>&1 | grep -Fq "runtime"
+          codesign --display --verbose=4 "$extension_path" 2>&1 | grep -Fq "runtime"
+
+      - name: Remove ephemeral code-signing identity
+        if: always()
+        shell: bash
+        run: |
+          security delete-keychain \
+            "$RUNNER_TEMP/read-frog-signing-smoke/self-signed.keychain-db" \
+            2>/dev/null || true
+          rm -f \
+            "$RUNNER_TEMP/read-frog-signing-smoke/key.pem" \
+            "$RUNNER_TEMP/read-frog-signing-smoke/cert.pem" \
+            "$RUNNER_TEMP/read-frog-signing-smoke/cert.p12"
+
       - name: Build and verify unsigned app container
-        run: pnpm package:macos:unsigned
+        run: node scripts/package-safari-app.mjs --unsigned
 
       - name: Upload smoke-test app
         uses: actions/upload-artifact@v7

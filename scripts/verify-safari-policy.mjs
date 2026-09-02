@@ -122,6 +122,18 @@ for (const secret of [
   check(releaseWorkflow.includes(`secrets.${secret}`), `release secret is not wired: ${secret}`)
 }
 
+const packagingWorkflow = await read(".github/workflows/submit.yml")
+check(
+  packagingWorkflow.includes("node scripts/package-safari-app.mjs --signed") &&
+    packagingWorkflow.includes("Read Frog CI Code Signing") &&
+    packagingWorkflow.includes('grep -Fq "runtime"'),
+  "macOS smoke workflow must exercise the signed Xcode build path and hardened runtime",
+)
+check(
+  packagingWorkflow.includes("node scripts/package-safari-app.mjs --unsigned"),
+  "macOS smoke workflow must retain the unsigned diagnostic artifact",
+)
+
 const caskRenderer = await read("scripts/render-homebrew-cask.mjs")
 for (const fragment of [
   'cask "read-frog"',
