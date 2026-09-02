@@ -59,18 +59,23 @@
 
 ## Release and Homebrew Notes
 
-- Stable distribution is a signed and notarized macOS app containing the Safari
-  Web Extension. A raw WXT ZIP or ad-hoc-signed app is never a stable Homebrew
-  release.
+- This fork intentionally publishes an ad-hoc-signed, unnotarized macOS app
+  because its owner has no Apple Developer Program credentials. Never describe
+  the Homebrew artifact as Developer ID signed, notarized, or Gatekeeper-trusted.
 - `scripts/package-safari-app.mjs` owns app-container generation. Keep its bundle
   identifier stable (`com.zhimin.readfrog`) because changing it creates a new
   Safari extension identity and storage container.
 - The release asset contract is
-  `Read-Frog-<version>-macos.zip`, containing `Read Frog.app`. The tap token is
-  `read-frog` in `stellarjmr/homebrew-tool`.
-- Configure Apple release secrets with `pnpm configure:release-secrets`; never
-  paste certificate passwords, PKCS#12 data, or `.p8` contents into issues,
-  commits, logs, or AI conversations.
+  `Read-Frog-<version>-macos-unsigned.zip`, containing `Read Frog.app`. The tap
+  token is `read-frog` in `stellarjmr/homebrew-tool`.
+- The generated cask must warn that macOS may require manual first-launch
+  approval and that Safari's "Allow unsigned extensions" setting resets each
+  time Safari quits.
+- `pnpm package:macos:signed` and `pnpm configure:release-secrets` preserve an
+  optional future Developer ID path. Never paste certificate passwords,
+  PKCS#12 data, or `.p8` contents into issues, commits, logs, or AI
+  conversations.
 - Never print certificate, key, notary, Apple account, or token secret values.
-- Do not merge the Changesets release PR while `STATUS.md` reports signing or
-  notarization as blocked.
+- Do not add an automatic Gatekeeper bypass or hide the unsigned state from
+  users. Merge a Changesets release PR only after the unsigned Xcode packaging
+  workflow and cask contract checks pass.

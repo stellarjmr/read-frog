@@ -42,11 +42,14 @@ describe("Homebrew cask renderer", () => {
     expect(cask).toContain('version "2.0.0"')
     expect(cask).toContain(`sha256 "${checksum}"`)
     expect(cask).toContain(
-      'url "https://github.com/stellarjmr/read-frog/releases/download/v#{version}/Read-Frog-#{version}-macos.zip"',
+      'url "https://github.com/stellarjmr/read-frog/releases/download/v#{version}/Read-Frog-#{version}-macos-unsigned.zip"',
     )
     expect(cask).toContain("depends_on macos: :sequoia")
     expect(cask).toContain('app "Read Frog.app"')
     expect(cask).toContain('"~/Library/Containers/com.zhimin.readfrog.Extension"')
+    expect(cask).toContain("ad-hoc signed and is not notarized by Apple")
+    expect(cask).toContain("Allow unsigned extensions")
+    expect(cask).toContain("whenever Safari quits")
   })
 
   it("rejects invalid versions and checksums", async () => {

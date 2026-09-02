@@ -71,9 +71,15 @@ for (const [scriptName, command] of Object.entries(scripts)) {
 }
 
 check(
-  scripts["package:macos:release"]?.includes("--signed") &&
-    scripts["package:macos:release"]?.includes("--notarize"),
-  "package:macos:release must require signing and notarization",
+  scripts["package:macos:release"]?.includes("--unsigned") &&
+    !scripts["package:macos:release"]?.includes("--signed") &&
+    !scripts["package:macos:release"]?.includes("--notarize"),
+  "package:macos:release must build the declared unsigned distribution",
+)
+check(
+  scripts["package:macos:signed"]?.includes("--signed") &&
+    scripts["package:macos:signed"]?.includes("--notarize"),
+  "package:macos:signed must retain the optional Developer ID release path",
 )
 check(
   scripts["configure:release-secrets"] === "bash scripts/configure-apple-release-secrets.sh",
@@ -126,8 +132,9 @@ check(
 
 const releaseWorkflow = await read(".github/workflows/release.yml")
 check(
-  releaseWorkflow.includes("needs: [plan, credentials]"),
-  "release metadata must wait for Apple credential preflight",
+  releaseWorkflow.includes("needs: plan") &&
+    !releaseWorkflow.includes("Validate Apple release credentials"),
+  "unsigned release metadata must not require unavailable Apple credentials",
 )
 check(
   releaseWorkflow.includes("actions: write") &&
@@ -144,12 +151,10 @@ check(
   "Changesets commits and tags must use the stellarjmr identity",
 )
 check(
-  releaseWorkflow.includes("xcrun notarytool history"),
-  "release workflow must authenticate with the notary service before tagging",
-)
-check(
-  releaseWorkflow.includes("node scripts/package-safari-app.mjs --signed --notarize"),
-  "stable release workflow must build a signed and notarized app",
+  releaseWorkflow.includes("node scripts/package-safari-app.mjs --unsigned") &&
+    !releaseWorkflow.includes("node scripts/package-safari-app.mjs --signed --notarize") &&
+    !releaseWorkflow.includes("MACOS_CERTIFICATE_P12"),
+  "stable release workflow must build the declared ad-hoc-signed app without Apple secrets",
 )
 check(
   releaseWorkflow.includes("node scripts/render-homebrew-cask.mjs"),
@@ -162,18 +167,6 @@ check(
     syncWorkflow.includes('git config user.email "219479939+stellarjmr@users.noreply.github.com"'),
   "automated upstream merge commits must use the stellarjmr identity",
 )
-
-for (const secret of [
-  "MACOS_CERTIFICATE_P12",
-  "MACOS_CERTIFICATE_PASSWORD",
-  "MACOS_SIGNING_IDENTITY",
-  "APPLE_TEAM_ID",
-  "APPLE_NOTARY_KEY_ID",
-  "APPLE_NOTARY_ISSUER_ID",
-  "APPLE_NOTARY_PRIVATE_KEY",
-]) {
-  check(releaseWorkflow.includes(`secrets.${secret}`), `release secret is not wired: ${secret}`)
-}
 
 const packagingWorkflow = await read(".github/workflows/submit.yml")
 check(
@@ -193,9 +186,12 @@ check(
 const caskRenderer = await read("scripts/render-homebrew-cask.mjs")
 for (const fragment of [
   'cask "read-frog"',
-  "stellarjmr/read-frog/releases/download/v#{version}/Read-Frog-#{version}-macos.zip",
+  "stellarjmr/read-frog/releases/download/v#{version}/Read-Frog-#{version}-macos-unsigned.zip",
   'app "Read Frog.app"',
   "com.zhimin.readfrog.Extension",
+  "ad-hoc signed and is not notarized by Apple",
+  "Allow unsigned extensions",
+  'Safari resets "Allow unsigned extensions" whenever Safari quits',
 ]) {
   check(caskRenderer.includes(fragment), `Homebrew cask contract is missing: ${fragment}`)
 }

@@ -83,9 +83,9 @@ The preferred persistent installation is Homebrew:
 brew install --cask stellarjmr/tool/read-frog
 ```
 
-Open **Read Frog** once after installation, then enable it in **Safari > Settings > Extensions** and grant the desired website access. Upgrade later with `brew upgrade --cask stellarjmr/tool/read-frog`.
+This fork's Homebrew app is **ad-hoc signed and not notarized by Apple**. If macOS blocks the first launch, open **System Settings > Privacy & Security** and choose **Open Anyway** for Read Frog.
 
-The cask is published automatically after the first Developer ID-signed and notarized release. Until that release gate is green, see [STATUS.md](./STATUS.md) rather than using an unsigned build as a permanent installation.
+In Safari 17 or later, enable **Show features for web developers** under **Safari > Settings > Advanced**, then enable **Allow unsigned extensions** under **Safari > Settings > Developer**. Open Read Frog once, enable it in **Safari > Settings > Extensions**, and grant the desired website access. Safari resets the unsigned-extension setting whenever it quits, so enable it again after each restart. Upgrade later with `brew upgrade --cask stellarjmr/tool/read-frog`.
 
 For development, build and load it temporarily:
 
@@ -95,7 +95,7 @@ For development, build and load it temporarily:
 4. In **Safari > Settings > Advanced**, enable **Show features for web developers**.
 5. Open the **Developer** tab in Safari Settings, click **Add Temporary Extension**, then select `.output/safari-mv3`.
 
-Raw development archives are named `read-frogextension-*-safari.zip`. See Apple's [Running your Safari web extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) guide for temporary loading. Stable Homebrew releases use a signed and notarized `Read-Frog-*-macos.zip` app container; see [HOMEBREW_RELEASE.md](./HOMEBREW_RELEASE.md).
+Raw development archives are named `read-frogextension-*-safari.zip`. See Apple's [Running your Safari web extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) guide for temporary loading. Homebrew releases use an explicitly unsigned `Read-Frog-*-macos-unsigned.zip` app container; see [HOMEBREW_RELEASE.md](./HOMEBREW_RELEASE.md) for its security model and installation steps.
 
 ### Community
 

@@ -24,7 +24,7 @@ cask "read-frog" do
   version "${version}"
   sha256 "${checksum}"
 
-  url "https://github.com/stellarjmr/read-frog/releases/download/v#{version}/Read-Frog-#{version}-macos.zip"
+  url "https://github.com/stellarjmr/read-frog/releases/download/v#{version}/Read-Frog-#{version}-macos-unsigned.zip"
   name "Read Frog"
   desc "AI-powered language learning extension for Safari"
   homepage "https://github.com/stellarjmr/read-frog"
@@ -44,8 +44,16 @@ cask "read-frog" do
   ]
 
   caveats <<~EOS
-    Open Read Frog once after installation, then enable it in
-    Safari > Settings > Extensions and grant the desired website access.
+    This Homebrew release is ad-hoc signed and is not notarized by Apple.
+    macOS may block the first launch. If it does, open System Settings >
+    Privacy & Security and choose Open Anyway for Read Frog.
+
+    Safari ignores unsigned extensions by default. In Safari 17 or later:
+      1. Safari > Settings > Advanced > Show features for web developers
+      2. Safari > Settings > Developer > Allow unsigned extensions
+      3. Open Read Frog once, then enable it in Settings > Extensions
+
+    Safari resets "Allow unsigned extensions" whenever Safari quits.
   EOS
 end
 `

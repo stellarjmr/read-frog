@@ -25,18 +25,16 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
   run: `33641727537` on commit `d63730b7`. The same run also exercised an
   ephemeral signing identity, hardened runtime, exact certificate cleanup, and
   the unsigned diagnostic build without an interactive keychain prompt.
-- GitHub release automation covers raw WebExtension ZIPs plus the signed,
-  notarized app and cask contract, but the stable macOS app/Homebrew release is
-  not yet publishable without credentials. Changesets PR #1 has been refreshed
-  for `@read-frog/extension@2.0.0` and contains every current upstream and
-  Safari-distribution changeset. Release planning passed in run `33642932720`;
-  credential validation and publication correctly remained skipped while the
-  seven Apple secrets are absent.
+- The owner selected transparent unsigned Homebrew distribution on 2026-09-02.
+  Release automation publishes the ad-hoc-signed, unnotarized macOS app as
+  `Read-Frog-<version>-macos-unsigned.zip`; it does not require or claim Apple
+  Developer credentials. Changesets PR #1 targets
+  `@read-frog/extension@2.0.0` and contains every current upstream and
+  Safari-distribution changeset.
 - `stellarjmr/homebrew-tool` exists and is already tapped locally. It does not
-  yet contain a `read-frog` cask; its verified-release polling workflow is
-  deployed at `8267b291`. Its no-release path passed again in run `33633131788`,
-  and the first-cask/update detection is covered separately, so it safely skips
-  publishing until signed and notarized assets exist.
+  yet contain a `read-frog` cask. Its release polling workflow safely skips
+  publishing until both the unsigned app archive and generated cask metadata
+  exist on a stable release.
 - Pull request #2 merged at `d63730b7` after its full test/build and macOS app
   packaging checks passed in runs `33642339245` and `33642339171`.
 - Every commit reachable from the active fork-only `main` and
@@ -69,47 +67,35 @@ over deleting upstream domain logic.
   validation failure.
 - `scripts/verify-safari-policy.mjs`: fast source-level guard against restoring
   non-Safari targets before the full WXT build.
-- `scripts/package-safari-app.mjs`: Xcode app-container generation, signed build,
-  notarization, stapling, stable artifact naming, and checksum output.
-- `.github/workflows/release.yml`: validates the certificate identity and calls
-  `notarytool history` before Changesets can create a release tag.
+- `scripts/package-safari-app.mjs`: Xcode app-container generation, ad-hoc and
+  optional Developer ID signing modes, stable artifact naming, and checksum
+  output.
+- `.github/workflows/release.yml`: Changesets release creation followed by a
+  full macOS build/test and unsigned app/cask asset upload.
 - Homebrew cask metadata is emitted as a release asset. The tap polls releases
   and publishes the cask from its own repository token.
 
-## Release Blocker
+## Unsigned Distribution Constraints
 
-This machine has only Apple Command Line Tools, no full Xcode, and no usable
-code-signing identity. The GitHub repositories currently have no Actions
-secrets configured. Apple requires a containing macOS app, and stable
-distribution outside the Mac App Store requires Developer ID signing and
-notarization.
+- The archive is ad-hoc signed only. It has no Developer ID identity or Apple
+  notarization ticket, and Gatekeeper is expected not to trust it automatically.
+- Homebrew installs and checksum-verifies the app but does not bypass Gatekeeper.
+  The user may need System Settings > Privacy & Security > Open Anyway on first
+  launch.
+- Safari 17 and later require Safari > Settings > Developer > Allow unsigned
+  extensions. Safari resets this setting whenever it quits.
+- The cask and release notes must disclose these limitations and must never
+  describe the artifact as signed, notarized, or Apple-trusted.
 
 GitHub CLI authentication and Git HTTPS credential integration are active for
-`stellarjmr`; only the Apple signing/notary credentials remain outstanding.
-
-Configure these Actions secrets in `stellarjmr/read-frog` before merging the
-release PR. Use the locally validating `pnpm configure:release-secrets` helper
-rather than copying secret values into project files or chat:
-
-| Secret                       | Purpose                                                             |
-| ---------------------------- | ------------------------------------------------------------------- |
-| `MACOS_CERTIFICATE_P12`      | Base64-encoded Developer ID Application certificate and private key |
-| `MACOS_CERTIFICATE_PASSWORD` | Password for the PKCS#12 file                                       |
-| `MACOS_SIGNING_IDENTITY`     | Full `Developer ID Application: ... (TEAMID)` identity              |
-| `APPLE_TEAM_ID`              | Apple Developer team identifier                                     |
-| `APPLE_NOTARY_KEY_ID`        | App Store Connect API key ID                                        |
-| `APPLE_NOTARY_ISSUER_ID`     | App Store Connect issuer ID                                         |
-| `APPLE_NOTARY_PRIVATE_KEY`   | Contents of the matching `AuthKey_*.p8` file                        |
+`stellarjmr`. No Apple secret is required for the selected distribution mode.
 
 ## Next Verified Milestones
 
-1. Add the seven signing/notary secrets and rerun the unsigned packaging smoke
-   workflow after any credential-driven script adjustment.
-2. Merge the open Changesets release PR; its preflight will refuse to create a
-   tag if any release secret is missing.
-3. Verify `codesign`, Gatekeeper assessment, notarization, and stapling on the
-   downloaded release app.
-4. Let the tap publish `Casks/read-frog.rb`, then verify from a clean state with
+1. Pass source policy, cask contract, full tests, and the real Xcode unsigned
+   packaging workflow.
+2. Merge the open Changesets release PR and verify the unsigned release assets.
+3. Let the tap publish `Casks/read-frog.rb`, then verify from a clean state with
    `brew install --cask stellarjmr/tool/read-frog` and enable the extension in
-   Safari Settings.
-5. Only after that end-to-end check, mark Homebrew distribution ready here.
+   Safari's unsigned-extension developer setting.
+4. Only after that end-to-end check, mark Homebrew distribution ready here.

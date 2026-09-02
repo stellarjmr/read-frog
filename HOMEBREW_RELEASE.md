@@ -1,22 +1,43 @@
-# Homebrew Safari App Release Runbook
+# Homebrew Unsigned Safari App Release Runbook
 
 Homebrew installs the containing `Read Frog.app`; it cannot permanently install
 a raw WebExtension directory. The app contains the WXT Safari MV3 build and is
 identified by the stable bundle ID `com.zhimin.readfrog`.
 
+## Security Model
+
+The fork owner has intentionally selected unsigned distribution because no
+Apple Developer Program credentials are available. Xcode builds without a
+Developer ID identity, then the packager applies an ad-hoc signature so macOS
+can verify bundle integrity. The result is not associated with an Apple-verified
+developer and is not notarized.
+
+Consequences that must remain visible to users:
+
+- Homebrew can download, checksum, and install the app, but it cannot make
+  Gatekeeper trust an unidentified developer.
+- macOS may require manual first-launch approval in System Settings > Privacy &
+  Security.
+- Safari ignores the extension until "Allow unsigned extensions" is enabled.
+- Safari resets that setting whenever Safari quits, so it must be enabled again
+  after every Safari restart.
+
+Do not add an automatic quarantine removal step or describe this build as
+signed in user-facing release text. A valid ad-hoc `codesign` verification is an
+integrity check, not Developer ID trust.
+
 ## Artifact Contract
 
 - Git tag: `v<package.json version>`
-- Stable app archive: `Read-Frog-<version>-macos.zip`
+- App archive: `Read-Frog-<version>-macos-unsigned.zip`
 - Archive root: `Read Frog.app`
 - Cask metadata asset: `read-frog.rb`
 - Tap: `stellarjmr/homebrew-tool`
 - Cask token: `read-frog`
 - Minimum macOS: Sequoia (Safari 18)
 
-Unsigned archives end in `-macos-unsigned.zip`. They are smoke-test artifacts
-only and must not be attached to a stable GitHub release or referenced by the
-tap.
+The cask URL and tap workflow must retain the `-unsigned` suffix so the trust
+model cannot be mistaken for a Developer ID release.
 
 ## Local Smoke Build
 
@@ -24,81 +45,63 @@ Install full Xcode, select it with `xcode-select`, then run:
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm package:macos:unsigned
+pnpm package:macos:release
 ```
 
 This invokes Apple's current `safari-web-extension-packager` and falls back to
-its former `safari-web-extension-converter` name. It creates an ad-hoc-signed
-app only to verify project generation and compilation.
-
-## Stable Release Credentials
-
-Add the Actions secrets listed in `STATUS.md`. Export the Developer ID
-Application certificate together with its private key as a password-protected
-PKCS#12 file, then base64-encode the file for `MACOS_CERTIFICATE_P12`. Store the
-full identity string in `MACOS_SIGNING_IDENTITY`.
-
-Use an App Store Connect API key for notarization. Store the three key fields as
-`APPLE_NOTARY_KEY_ID`, `APPLE_NOTARY_ISSUER_ID`, and
-`APPLE_NOTARY_PRIVATE_KEY`.
-
-After authenticating GitHub CLI as the fork owner, configure all seven secrets
-without pasting them into chat or shell arguments:
-
-```bash
-gh auth login -h github.com -p https -s repo,workflow
-pnpm configure:release-secrets \
-  --certificate /path/to/developer-id-application.p12 \
-  --notary-key /path/to/AuthKey_KEYID.p8 \
-  --issuer APP_STORE_CONNECT_ISSUER_UUID
-```
-
-The helper re-encrypts the certificate with a one-time password before importing
-it into an ephemeral keychain, derives the signing identity and Team ID,
-validates the API key with `notarytool history`, asks for confirmation, and
-sends every value to GitHub over standard input. The original certificate
-password never appears in an external process argument.
-
-The workflow imports credentials into an ephemeral keychain, builds both app
-and extension with hardened runtime, submits the ZIP to `notarytool`, staples
-the accepted ticket, verifies it with `stapler`, and requires Gatekeeper's
-`spctl` assessment to pass.
-
-Before Changesets is allowed to create a tag, a separate macOS preflight imports
-the PKCS#12 certificate, confirms that `MACOS_SIGNING_IDENTITY` and
-`APPLE_TEAM_ID` agree, and calls `notarytool history` with the API key. This
-keeps malformed or unauthorized credentials from creating a partial GitHub
-release. The preflight is skipped while a release PR is merely being updated.
+its former `safari-web-extension-converter` name. The resulting app and embedded
+extension receive ad-hoc signatures, and the ZIP checksum is emitted for the
+cask renderer.
 
 ## Publishing
 
-1. Confirm `STATUS.md` no longer reports signing/notary secrets as blocked.
-2. Run `Test Safari App Packaging` and require a passing result.
-3. Merge the Changesets release PR.
-4. Wait for `Release Safari Extension` to upload all four asset classes: raw
-   Safari ZIP, source ZIP, signed/notarized macOS ZIP, and `read-frog.rb`.
-5. The tap's scheduled `Update Read Frog Cask` workflow downloads the cask
-   metadata asset, audits it, and commits it with the tap repository's own
-   `GITHUB_TOKEN`.
+1. Run `Test Safari App Packaging` and require its signed-path diagnostic plus
+   unsigned build to pass.
+2. Merge the Changesets release PR.
+3. Wait for `Release Safari Extension` to create the tag and release, run all
+   source/build/tests, and upload the raw Safari ZIP, source ZIP, unsigned macOS
+   ZIP, and `read-frog.rb`.
+4. Dispatch the tap's `Update Read Frog Cask` workflow. It verifies the checksum,
+   bundle layout, and ad-hoc signatures, audits the cask, performs a Homebrew
+   install smoke test, and commits `Casks/read-frog.rb`.
 
 For a repair of an existing tag, dispatch `Release Safari Extension` and enter
-the tag. This rebuild path still requires every signing and notarization gate.
+the tag. The rebuild overwrites only the generated release assets.
 
 ## End-to-End Verification
 
-From a machine without a previous Read Frog app installation:
+From a machine without a previous Read Frog installation:
 
 ```bash
 brew update
 brew install --cask stellarjmr/tool/read-frog
 codesign --verify --deep --strict --verbose=2 "/Applications/Read Frog.app"
-spctl --assess --type execute --verbose=2 "/Applications/Read Frog.app"
-xcrun stapler validate "/Applications/Read Frog.app"
+codesign --display --verbose=4 "/Applications/Read Frog.app" 2>&1 | grep "Signature=adhoc"
 ```
 
-Open the app once, enable Read Frog under Safari Settings > Extensions, grant
-website access, and verify translation on a normal page. Then verify upgrades:
+`spctl --assess` and `xcrun stapler validate` are expected to reject this build;
+passing either check would mean the documented unsigned contract no longer
+matches the artifact.
+
+After installation:
+
+1. Open Read Frog once. If macOS blocks it, open System Settings > Privacy &
+   Security and choose Open Anyway for Read Frog.
+2. In Safari > Settings > Advanced, enable "Show features for web developers".
+3. In Safari > Settings > Developer, enable "Allow unsigned extensions".
+4. Open Read Frog again, then enable it in Safari > Settings > Extensions and
+   grant the desired website access.
+
+Repeat step 3 after every Safari restart. Upgrades remain available with:
 
 ```bash
 brew upgrade --cask stellarjmr/tool/read-frog
 ```
+
+## Optional Future Developer ID Release
+
+If Apple credentials become available later, `pnpm package:macos:signed` and
+`pnpm configure:release-secrets` retain the signed/notarized implementation.
+Switching the public artifact requires updating this runbook, `AGENTS.md`,
+`STATUS.md`, the policy verifier, the release workflow, and the tap workflow in
+one validated change.
