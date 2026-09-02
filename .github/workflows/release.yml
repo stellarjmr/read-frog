@@ -181,6 +181,13 @@ jobs:
 
       - name: Validate source and build WebExtension archives
         run: |
+          if [ -z "$WXT_POSTHOG_API_KEY" ]; then
+            unset WXT_POSTHOG_API_KEY
+          fi
+          if [ -z "$WXT_POSTHOG_HOST" ]; then
+            unset WXT_POSTHOG_HOST
+          fi
+
           pnpm exec nx fmt:check
           pnpm lint
           SKIP_FREE_API=true pnpm test

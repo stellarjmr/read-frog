@@ -160,6 +160,11 @@ check(
   releaseWorkflow.includes("node scripts/render-homebrew-cask.mjs"),
   "stable release workflow must render Homebrew cask metadata",
 )
+check(
+  releaseWorkflow.includes("unset WXT_POSTHOG_API_KEY") &&
+    releaseWorkflow.includes("unset WXT_POSTHOG_HOST"),
+  "release workflow must omit unconfigured optional analytics values from production builds",
+)
 
 const syncWorkflow = await read(".github/workflows/sync-upstream.yml")
 check(
