@@ -42,6 +42,23 @@ Use an App Store Connect API key for notarization. Store the three key fields as
 `APPLE_NOTARY_KEY_ID`, `APPLE_NOTARY_ISSUER_ID`, and
 `APPLE_NOTARY_PRIVATE_KEY`.
 
+After authenticating GitHub CLI as the fork owner, configure all seven secrets
+without pasting them into chat or shell arguments:
+
+```bash
+gh auth login -h github.com -p https -s repo,workflow
+pnpm configure:release-secrets \
+  --certificate /path/to/developer-id-application.p12 \
+  --notary-key /path/to/AuthKey_KEYID.p8 \
+  --issuer APP_STORE_CONNECT_ISSUER_UUID
+```
+
+The helper re-encrypts the certificate with a one-time password before importing
+it into an ephemeral keychain, derives the signing identity and Team ID,
+validates the API key with `notarytool history`, asks for confirmation, and
+sends every value to GitHub over standard input. The original certificate
+password never appears in an external process argument.
+
 The workflow imports credentials into an ephemeral keychain, builds both app
 and extension with hardened runtime, submits the ZIP to `notarytool`, staples
 the accepted ticket, verifies it with `stapler`, and requires Gatekeeper's

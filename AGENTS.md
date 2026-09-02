@@ -65,6 +65,9 @@
 - The release asset contract is
   `Read-Frog-<version>-macos.zip`, containing `Read Frog.app`. The tap token is
   `read-frog` in `stellarjmr/homebrew-tool`.
+- Configure Apple release secrets with `pnpm configure:release-secrets`; never
+  paste certificate passwords, PKCS#12 data, or `.p8` contents into issues,
+  commits, logs, or AI conversations.
 - Never print certificate, key, notary, Apple account, or token secret values.
 - Do not merge the Changesets release PR while `STATUS.md` reports signing or
   notarization as blocked.

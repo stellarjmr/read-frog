@@ -7,6 +7,7 @@
   "scripts": {
     "build": "WXT_SKIP_ENV_VALIDATION=true wxt build -b safari --mv3",
     "build:analyze": "WXT_SKIP_ENV_VALIDATION=true wxt build -b safari --mv3 --analyze",
+    "configure:release-secrets": "bash scripts/configure-apple-release-secrets.sh",
     "dev:local": "WXT_USE_LOCAL_PACKAGES=true wxt -b safari --mv3",
     "dev": "wxt -b safari --mv3",
     "fmt": "oxfmt --write .",

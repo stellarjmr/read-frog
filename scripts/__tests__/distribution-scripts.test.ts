@@ -7,6 +7,9 @@ import { afterEach, describe, expect, it } from "vitest"
 
 const renderCaskScript = fileURLToPath(new URL("../render-homebrew-cask.mjs", import.meta.url))
 const packageSafariAppScript = fileURLToPath(new URL("../package-safari-app.mjs", import.meta.url))
+const configureReleaseSecretsScript = fileURLToPath(
+  new URL("../configure-apple-release-secrets.sh", import.meta.url),
+)
 const temporaryDirectories: string[] = []
 
 async function createTemporaryDirectory() {
@@ -87,5 +90,26 @@ describe("Safari app packager arguments", () => {
         "Usage: package-safari-app.mjs (--unsigned | --signed [--notarize])",
       )
     }
+  })
+})
+
+describe("Apple release secret helper interface", () => {
+  it("shows usage without prompting for credentials", () => {
+    const result = spawnSync("bash", [configureReleaseSecretsScript, "--help"], {
+      encoding: "utf8",
+    })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain("--certificate /path/to/developer-id.p12")
+    expect(result.stdout).toContain("never written to the repository")
+  })
+
+  it("rejects an option without a value before reading credentials", () => {
+    const result = spawnSync("bash", [configureReleaseSecretsScript, "--certificate"], {
+      encoding: "utf8",
+    })
+
+    expect(result.status).toBe(2)
+    expect(result.stderr).toContain("Missing value for --certificate")
   })
 })

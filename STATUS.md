@@ -13,7 +13,7 @@ Manifest V3 build, and distribute the persistent macOS Safari extension through
 
 - Upstream merged through `02ad422c` (`fix(translate): serve remounted paragraphs
 from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
-  fork `main` at `512b7ca1`. The deployed no-change sync path passed in run
+  fork `main` at `01e10ee2`. The deployed no-change sync path passed in run
   `33632190240`.
 - The WXT build target is locked to Safari MV3 with Safari 18.0 as the minimum.
 - Chrome, Edge, Firefox, offscreen, and side-panel build artifacts are excluded.
@@ -34,6 +34,10 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
   deployed at `d509149`. Its no-release path passed again in run `33633131788`,
   and the first-cask/update detection is covered separately, so it safely skips
   publishing until signed and notarized assets exist.
+- Fork `main` and the remote Safari branch are deployed through `01e10ee2`.
+  Additional signed-build smoke coverage and Safari API policy guards are
+  committed locally but await refreshed GitHub CLI authentication before they
+  can be pushed and verified remotely.
 
 ## Intentional Safari Divergence
 
@@ -72,8 +76,13 @@ secrets configured. Apple requires a containing macOS app, and stable
 distribution outside the Mac App Store requires Developer ID signing and
 notarization.
 
+Local GitHub CLI authentication for `stellarjmr` has expired. Run
+`gh auth login -h github.com -p https -s repo,workflow` before pushing the
+pending hardening commits or configuring secrets.
+
 Configure these Actions secrets in `stellarjmr/read-frog` before merging the
-release PR:
+release PR. Use the locally validating `pnpm configure:release-secrets` helper
+rather than copying secret values into project files or chat:
 
 | Secret                       | Purpose                                                             |
 | ---------------------------- | ------------------------------------------------------------------- |

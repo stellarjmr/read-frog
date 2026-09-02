@@ -75,6 +75,10 @@ check(
     scripts["package:macos:release"]?.includes("--notarize"),
   "package:macos:release must require signing and notarization",
 )
+check(
+  scripts["configure:release-secrets"] === "bash scripts/configure-apple-release-secrets.sh",
+  "configure:release-secrets must use the local validated secret helper",
+)
 
 const wxtConfig = await read("wxt.config.ts")
 check(/browser:\s*["']safari["']/.test(wxtConfig), "WXT default browser must be Safari")
@@ -178,12 +182,29 @@ for (const fragment of [
   check(caskRenderer.includes(fragment), `Homebrew cask contract is missing: ${fragment}`)
 }
 
+const credentialHelper = await read("scripts/configure-apple-release-secrets.sh")
+for (const fragment of [
+  "openssl pkcs12",
+  "-passin stdin",
+  'rewrapped_certificate_path="$temporary_directory/identity.p12"',
+  '-passout "pass:$keychain_password"',
+  "gh secret set MACOS_CERTIFICATE_PASSWORD",
+  "gh secret set APPLE_NOTARY_PRIVATE_KEY",
+]) {
+  check(credentialHelper.includes(fragment), `release credential helper is missing: ${fragment}`)
+}
+check(
+  !credentialHelper.includes('-P "$certificate_password"'),
+  "release credential helper must not expose the certificate password in process arguments",
+)
+
 for (const requiredFile of [
   "AGENTS.md",
   "STATUS.md",
   "UPSTREAM_SYNC.md",
   "HOMEBREW_RELEASE.md",
   ".github/workflows/sync-upstream.yml",
+  "scripts/configure-apple-release-secrets.sh",
   "scripts/package-safari-app.mjs",
 ]) {
   check(await exists(requiredFile), `fork engineering file is missing: ${requiredFile}`)
