@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import { createReadStream } from "node:fs"
-import { access, appendFile, mkdir, readFile, readdir, rm } from "node:fs/promises"
+import { access, appendFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -154,6 +154,28 @@ if (projects.length !== 1) {
 }
 
 const projectPath = projects[0]
+const projectFilePath = path.join(projectPath, "project.pbxproj")
+const generatedProject = await readFile(projectFilePath, "utf8")
+let appBundleIdentifierCount = 0
+let extensionBundleIdentifierCount = 0
+const configuredProject = generatedProject.replace(
+  /(PRODUCT_BUNDLE_IDENTIFIER\s*=\s*)([^;]+)(;)/g,
+  (_match, prefix, rawIdentifier, suffix) => {
+    const generatedIdentifier = rawIdentifier.trim().replace(/^"|"$/g, "")
+    if (/\.Extension$/i.test(generatedIdentifier)) {
+      extensionBundleIdentifierCount += 1
+      return `${prefix}${bundleIdentifier}.Extension${suffix}`
+    }
+
+    appBundleIdentifierCount += 1
+    return `${prefix}${bundleIdentifier}${suffix}`
+  },
+)
+if (appBundleIdentifierCount === 0 || extensionBundleIdentifierCount === 0) {
+  throw new Error("Unable to configure app and extension bundle identifiers in the Xcode project")
+}
+await writeFile(projectFilePath, configuredProject)
+
 const projectListing = JSON.parse(
   run("xcodebuild", ["-project", projectPath, "-list", "-json"], { capture: true }),
 )
