@@ -148,6 +148,13 @@ check(
   "stable release workflow must render Homebrew cask metadata",
 )
 
+const syncWorkflow = await read(".github/workflows/sync-upstream.yml")
+check(
+  syncWorkflow.includes('git config user.name "stellarjmr"') &&
+    syncWorkflow.includes('git config user.email "219479939+stellarjmr@users.noreply.github.com"'),
+  "automated upstream merge commits must use the stellarjmr identity",
+)
+
 for (const secret of [
   "MACOS_CERTIFICATE_P12",
   "MACOS_CERTIFICATE_PASSWORD",

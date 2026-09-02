@@ -26,6 +26,9 @@
   document the limitation and proposed adapter in `STATUS.md`.
 - `.github/workflows/sync-upstream.yml` is the production sync path. A direct
   local sync must pass the same gates before it is pushed.
+- Attribute fork-authored and automated merge commits to
+  `stellarjmr <219479939+stellarjmr@users.noreply.github.com>` while preserving
+  the original authorship of commits imported from upstream.
 - Run `git fetch upstream main`, then inspect
   `git rev-list --left-right --count upstream/main...HEAD` and
   `git log --oneline HEAD..upstream/main` before claiming the fork is current.
