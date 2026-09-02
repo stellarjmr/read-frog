@@ -27,11 +27,13 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
   notarized app and cask contract, but the stable macOS app/Homebrew release is
   not yet publishable without credentials. Changesets PR #1 has been refreshed
   for `@read-frog/extension@2.0.0` and contains every current upstream and
-  Safari-distribution changeset.
+  Safari-distribution changeset. Its Safari build and full test checks passed in
+  run `33632589348` after the repository's first-contributor approval.
 - `stellarjmr/homebrew-tool` exists and is already tapped locally. It does not
   yet contain a `read-frog` cask; its verified-release polling workflow is
-  deployed at `57014bd`. Its no-release path passed in run `33632366290`, so it
-  safely skips publishing until signed and notarized assets exist.
+  deployed at `d509149`. Its no-release path passed again in run `33633131788`,
+  and the first-cask/update detection is covered separately, so it safely skips
+  publishing until signed and notarized assets exist.
 
 ## Intentional Safari Divergence
 
@@ -56,7 +58,9 @@ over deleting upstream domain logic.
 - `scripts/verify-safari-policy.mjs`: fast source-level guard against restoring
   non-Safari targets before the full WXT build.
 - `scripts/package-safari-app.mjs`: Xcode app-container generation, signed build,
-  notarization, stapling, and deterministic release ZIP metadata.
+  notarization, stapling, stable artifact naming, and checksum output.
+- `.github/workflows/release.yml`: validates the certificate identity and calls
+  `notarytool history` before Changesets can create a release tag.
 - Homebrew cask metadata is emitted as a release asset. The tap polls releases
   and publishes the cask from its own repository token.
 

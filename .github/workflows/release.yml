@@ -26,8 +26,131 @@ permissions:
   pull-requests: write
 
 jobs:
+  plan:
+    name: Plan release
+    runs-on: ubuntu-latest
+    outputs:
+      requires_credentials: ${{ steps.plan.outputs.requires_credentials }}
+
+    steps:
+      - name: Checkout fork main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Determine whether this run can create or rebuild a release
+        id: plan
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          if [ -n "$INPUT_TAG" ]; then
+            version=$(git show "$INPUT_TAG:package.json" | jq -r .version)
+            if [ "$INPUT_TAG" != "v$version" ]; then
+              echo "::error::Tag $INPUT_TAG does not match package version $version"
+              exit 1
+            fi
+
+            echo "requires_credentials=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          version=$(node -p 'require("./package.json").version')
+          changeset_count=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
+          if [ "$changeset_count" = "0" ] && ! git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            echo "requires_credentials=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "requires_credentials=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  credentials:
+    name: Validate Apple release credentials
+    needs: plan
+    if: needs.plan.outputs.requires_credentials == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Validate certificate identity and notary authentication
+        shell: bash
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
+          APPLE_NOTARY_PRIVATE_KEY: ${{ secrets.APPLE_NOTARY_PRIVATE_KEY }}
+        run: |
+          missing=0
+          for name in MACOS_CERTIFICATE_P12 MACOS_CERTIFICATE_PASSWORD MACOS_SIGNING_IDENTITY APPLE_TEAM_ID APPLE_NOTARY_KEY_ID APPLE_NOTARY_ISSUER_ID APPLE_NOTARY_PRIVATE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required release secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit "$missing"
+          fi
+
+          if [[ "$MACOS_SIGNING_IDENTITY" != *"($APPLE_TEAM_ID)"* ]]; then
+            echo "::error::MACOS_SIGNING_IDENTITY does not contain APPLE_TEAM_ID"
+            exit 1
+          fi
+
+          certificate_path="$RUNNER_TEMP/read-frog-preflight.p12"
+          notary_key_path="$RUNNER_TEMP/AuthKey_${APPLE_NOTARY_KEY_ID}.p8"
+          keychain_path="$RUNNER_TEMP/read-frog-preflight.keychain-db"
+          keychain_password="read-frog-preflight-${{ github.run_id }}-${{ github.run_attempt }}"
+
+          if ! printf '%s' "$MACOS_CERTIFICATE_P12" | /usr/bin/base64 -D > "$certificate_path"; then
+            echo "::error::MACOS_CERTIFICATE_P12 is not valid base64"
+            exit 1
+          fi
+          printf '%s' "$APPLE_NOTARY_PRIVATE_KEY" > "$notary_key_path"
+          chmod 600 "$certificate_path" "$notary_key_path"
+
+          if ! grep -Fq -- '-----BEGIN PRIVATE KEY-----' "$notary_key_path" || ! grep -Fq -- '-----END PRIVATE KEY-----' "$notary_key_path"; then
+            echo "::error::APPLE_NOTARY_PRIVATE_KEY is not a complete PEM private key"
+            exit 1
+          fi
+
+          security create-keychain -p "$keychain_password" "$keychain_path"
+          security set-keychain-settings -lut 600 "$keychain_path"
+          security unlock-keychain -p "$keychain_password" "$keychain_path"
+          security import "$certificate_path" -k "$keychain_path" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain_path"
+
+          identities=$(security find-identity -v -p codesigning "$keychain_path")
+          if ! grep -Fq "$MACOS_SIGNING_IDENTITY" <<< "$identities"; then
+            echo "::error::MACOS_SIGNING_IDENTITY was not found in MACOS_CERTIFICATE_P12"
+            exit 1
+          fi
+
+          xcrun notarytool history \
+            --key "$notary_key_path" \
+            --key-id "$APPLE_NOTARY_KEY_ID" \
+            --issuer "$APPLE_NOTARY_ISSUER_ID"
+
+      - name: Remove imported credential material
+        if: always()
+        shell: bash
+        env:
+          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
+        run: |
+          security delete-keychain "$RUNNER_TEMP/read-frog-preflight.keychain-db" 2>/dev/null || true
+          rm -f \
+            "$RUNNER_TEMP/read-frog-preflight.p12" \
+            "$RUNNER_TEMP/AuthKey_${APPLE_NOTARY_KEY_ID}.p8"
+
   release:
     name: Prepare release metadata
+    needs: [plan, credentials]
+    if: >-
+      always() &&
+      needs.plan.result == 'success' &&
+      (needs.credentials.result == 'success' || needs.credentials.result == 'skipped')
     runs-on: ubuntu-latest
     env:
       HUSKY: 0
@@ -52,40 +175,6 @@ jobs:
       - name: Install dependencies
         if: inputs.tag == ''
         run: pnpm install --frozen-lockfile
-
-      - name: Detect an unpublished release candidate
-        if: inputs.tag == ''
-        id: candidate
-        shell: bash
-        run: |
-          version=$(node -p 'require("./package.json").version')
-          changeset_count=$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md | wc -l | tr -d ' ')
-          if [ "$changeset_count" = "0" ] && ! git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
-            echo "needs_signing=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "needs_signing=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Require signing and notarization configuration before publishing
-        if: steps.candidate.outputs.needs_signing == 'true'
-        shell: bash
-        env:
-          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
-          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_NOTARY_KEY_ID: ${{ secrets.APPLE_NOTARY_KEY_ID }}
-          APPLE_NOTARY_ISSUER_ID: ${{ secrets.APPLE_NOTARY_ISSUER_ID }}
-          APPLE_NOTARY_PRIVATE_KEY: ${{ secrets.APPLE_NOTARY_PRIVATE_KEY }}
-        run: |
-          missing=0
-          for name in MACOS_CERTIFICATE_P12 MACOS_CERTIFICATE_PASSWORD MACOS_SIGNING_IDENTITY APPLE_TEAM_ID APPLE_NOTARY_KEY_ID APPLE_NOTARY_ISSUER_ID APPLE_NOTARY_PRIVATE_KEY; do
-            if [ -z "${!name}" ]; then
-              echo "::error::Missing required release secret: $name"
-              missing=1
-            fi
-          done
-          exit "$missing"
 
       - name: Create release pull request or tag
         if: inputs.tag == ''

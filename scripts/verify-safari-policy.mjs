@@ -86,7 +86,54 @@ check(
   "Changesets changelog repository must point to the Safari fork",
 )
 
-for (const requiredFile of ["AGENTS.md", "STATUS.md", "scripts/package-safari-app.mjs"]) {
+const releaseWorkflow = await read(".github/workflows/release.yml")
+check(
+  releaseWorkflow.includes("needs: [plan, credentials]"),
+  "release metadata must wait for Apple credential preflight",
+)
+check(
+  releaseWorkflow.includes("xcrun notarytool history"),
+  "release workflow must authenticate with the notary service before tagging",
+)
+check(
+  releaseWorkflow.includes("node scripts/package-safari-app.mjs --signed --notarize"),
+  "stable release workflow must build a signed and notarized app",
+)
+check(
+  releaseWorkflow.includes("node scripts/render-homebrew-cask.mjs"),
+  "stable release workflow must render Homebrew cask metadata",
+)
+
+for (const secret of [
+  "MACOS_CERTIFICATE_P12",
+  "MACOS_CERTIFICATE_PASSWORD",
+  "MACOS_SIGNING_IDENTITY",
+  "APPLE_TEAM_ID",
+  "APPLE_NOTARY_KEY_ID",
+  "APPLE_NOTARY_ISSUER_ID",
+  "APPLE_NOTARY_PRIVATE_KEY",
+]) {
+  check(releaseWorkflow.includes(`secrets.${secret}`), `release secret is not wired: ${secret}`)
+}
+
+const caskRenderer = await read("scripts/render-homebrew-cask.mjs")
+for (const fragment of [
+  'cask "read-frog"',
+  "stellarjmr/read-frog/releases/download/v#{version}/Read-Frog-#{version}-macos.zip",
+  'app "Read Frog.app"',
+  "com.zhimin.readfrog.Extension",
+]) {
+  check(caskRenderer.includes(fragment), `Homebrew cask contract is missing: ${fragment}`)
+}
+
+for (const requiredFile of [
+  "AGENTS.md",
+  "STATUS.md",
+  "UPSTREAM_SYNC.md",
+  "HOMEBREW_RELEASE.md",
+  ".github/workflows/sync-upstream.yml",
+  "scripts/package-safari-app.mjs",
+]) {
   check(await exists(requiredFile), `fork engineering file is missing: ${requiredFile}`)
 }
 

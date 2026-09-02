@@ -47,6 +47,12 @@ and extension with hardened runtime, submits the ZIP to `notarytool`, staples
 the accepted ticket, verifies it with `stapler`, and requires Gatekeeper's
 `spctl` assessment to pass.
 
+Before Changesets is allowed to create a tag, a separate macOS preflight imports
+the PKCS#12 certificate, confirms that `MACOS_SIGNING_IDENTITY` and
+`APPLE_TEAM_ID` agree, and calls `notarytool history` with the API key. This
+keeps malformed or unauthorized credentials from creating a partial GitHub
+release. The preflight is skipped while a release PR is merely being updated.
+
 ## Publishing
 
 1. Confirm `STATUS.md` no longer reports signing/notary secrets as blocked.
