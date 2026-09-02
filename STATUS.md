@@ -18,23 +18,31 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
 - The WXT build target is locked to Safari MV3 with Safari 18.0 as the minimum.
 - Chrome, Edge, Firefox, offscreen, and side-panel build artifacts are excluded.
 - Raw Safari WebExtension build and verification work locally.
-- The generated unsigned macOS container has passed the real GitHub macOS/Xcode
-  smoke workflow. Downloaded artifact evidence confirms a Universal
-  `Read Frog.app`, the `com.zhimin.readfrog` / `.Extension` bundle hierarchy,
-  the embedded Safari MV3 manifest, and valid ad-hoc deep signatures. Verified
-  run: `33641727537` on commit `d63730b7`. The same run also exercised an
-  ephemeral signing identity, hardened runtime, exact certificate cleanup, and
-  the unsigned diagnostic build without an interactive keychain prompt.
+- The generated unsigned macOS container has passed both the real GitHub
+  macOS/Xcode smoke workflow and the stable release workflow. Downloaded
+  artifact evidence confirms a Universal `Read Frog.app`, the
+  `com.zhimin.readfrog` / `.Extension` bundle hierarchy, the embedded Safari
+  MV3 manifest, and valid ad-hoc deep signatures. The smoke run was
+  `33641727537`; the successful stable rebuild was `33649233832`.
 - The owner selected transparent unsigned Homebrew distribution on 2026-09-02.
   Release automation publishes the ad-hoc-signed, unnotarized macOS app as
   `Read-Frog-<version>-macos-unsigned.zip`; it does not require or claim Apple
-  Developer credentials. Changesets PR #1 targets
-  `@read-frog/extension@2.0.0` and contains every current upstream and
-  Safari-distribution changeset.
-- `stellarjmr/homebrew-tool` exists and is already tapped locally. It does not
-  yet contain a `read-frog` cask. Its release polling workflow safely skips
-  publishing until both the unsigned app archive and generated cask metadata
-  exist on a stable release.
+  Developer credentials. Changesets PR #1 merged as `b95fa09c` and published
+  `@read-frog/extension@2.0.0` plus GitHub Release `v2.0.0`.
+- Release `v2.0.0` contains the unsigned macOS archive, Safari archive, source
+  archive, and generated cask. Independent download verification matched
+  SHA-256 `e6824839badde5f1ca6dcc2351ab081e02e7c35e4b56092b1987ae06f9dabb5a`,
+  confirmed `Signature=adhoc`, found no signing authority or notarization
+  ticket, and confirmed the expected Gatekeeper rejection.
+- `stellarjmr/homebrew-tool` publishes `Casks/read-frog.rb` at tap commit
+  `0732888f`. Tap run `33650280373` passed strict audit and a clean install /
+  uninstall test. A separate local install with
+  `brew install --cask stellarjmr/tool/read-frog` succeeded and left version
+  `2.0.0` at `/Applications/Read Frog.app`; both the app and embedded extension
+  pass strict codesign integrity verification.
+- Pull request #3 merged the unsigned release path at `f47c22dd`. A follow-up
+  release fix at `c76307f4` makes optional analytics secrets genuinely optional
+  and was used for the successful `v2.0.0` rebuild.
 - Pull request #2 merged at `d63730b7` after its full test/build and macOS app
   packaging checks passed in runs `33642339245` and `33642339171`.
 - Every commit reachable from the active fork-only `main` and
@@ -90,12 +98,11 @@ over deleting upstream domain logic.
 GitHub CLI authentication and Git HTTPS credential integration are active for
 `stellarjmr`. No Apple secret is required for the selected distribution mode.
 
-## Next Verified Milestones
+## Distribution Readiness
 
-1. Pass source policy, cask contract, full tests, and the real Xcode unsigned
-   packaging workflow.
-2. Merge the open Changesets release PR and verify the unsigned release assets.
-3. Let the tap publish `Casks/read-frog.rb`, then verify from a clean state with
-   `brew install --cask stellarjmr/tool/read-frog` and enable the extension in
-   Safari's unsigned-extension developer setting.
-4. Only after that end-to-end check, mark Homebrew distribution ready here.
+The unsigned Homebrew distribution path is ready and verified end to end. The
+remaining first-run actions are intentionally manual security decisions: approve
+Read Frog in macOS Privacy & Security if Gatekeeper blocks it, enable Safari's
+unsigned-extension developer setting, open Read Frog once, and enable the
+extension. Continue validating future upstream syncs and releases with the
+established automation above.
