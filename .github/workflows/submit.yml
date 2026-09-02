@@ -21,6 +21,7 @@ jobs:
   package:
     name: Build unsigned app-container smoke artifact
     runs-on: macos-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -60,17 +61,24 @@ jobs:
             -inkey "$signing_directory/key.pem" \
             -in "$signing_directory/cert.pem" \
             -out "$signing_directory/cert.p12" \
-            -passout "pass:$keychain_password"
+            -passout "pass:$keychain_password" \
+            -keypbe PBE-SHA1-3DES \
+            -certpbe PBE-SHA1-3DES \
+            -macalg sha1
 
+          echo "::notice::Creating temporary keychain"
           security create-keychain -p "$keychain_password" "$keychain_path"
           security unlock-keychain -p "$keychain_password" "$keychain_path"
+          echo "::notice::Importing temporary signing identity"
           security import "$signing_directory/cert.p12" \
             -k "$keychain_path" \
             -P "$keychain_password" \
-            -A -t cert -f pkcs12
-          security add-trusted-cert -r trustRoot \
-            -k "$keychain_path" \
+            -A -t agg -f pkcs12
+          echo "::notice::Trusting temporary signing identity"
+          sudo -n security add-trusted-cert -d -r trustRoot \
+            -k /Library/Keychains/System.keychain \
             "$signing_directory/cert.pem"
+          echo "::notice::Authorizing codesign key access"
           security set-key-partition-list \
             -S apple-tool:,apple:,codesign: \
             -s -k "$keychain_password" \
@@ -100,6 +108,16 @@ jobs:
         if: always()
         shell: bash
         run: |
+          certificate_path="$RUNNER_TEMP/read-frog-signing-smoke/cert.pem"
+          if [ -f "$certificate_path" ]; then
+            certificate_hash=$(openssl x509 \
+              -in "$certificate_path" \
+              -noout -fingerprint -sha1 | cut -d= -f2 | tr -d ':')
+            sudo -n security delete-certificate \
+              -Z "$certificate_hash" \
+              /Library/Keychains/System.keychain \
+              >/dev/null 2>&1 || true
+          fi
           security delete-keychain \
             "$RUNNER_TEMP/read-frog-signing-smoke/self-signed.keychain-db" \
             2>/dev/null || true

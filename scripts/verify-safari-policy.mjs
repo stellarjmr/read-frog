@@ -171,6 +171,9 @@ const packagingWorkflow = await read(".github/workflows/submit.yml")
 check(
   packagingWorkflow.includes("node scripts/package-safari-app.mjs --signed") &&
     packagingWorkflow.includes("Read Frog CI Code Signing") &&
+    packagingWorkflow.includes("timeout-minutes: 15") &&
+    packagingWorkflow.includes("sudo -n security add-trusted-cert -d") &&
+    packagingWorkflow.includes("security delete-certificate") &&
     packagingWorkflow.includes('grep -Fq "runtime"'),
   "macOS smoke workflow must exercise the signed Xcode build path and hardened runtime",
 )
