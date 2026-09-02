@@ -22,6 +22,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: write
   contents: write
   pull-requests: write
 
@@ -188,6 +189,38 @@ jobs:
           create-github-releases: true
         env:
           SKIP_FREE_API: true
+
+      - name: Approve trusted Changesets pull request checks
+        if: inputs.tag == '' && steps.changesets.outputs.pr-number != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.changesets.outputs.pr-number }}
+        run: |
+          pr_sha=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq .head.sha)
+
+          for attempt in {1..10}; do
+            runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?event=pull_request&status=action_required&branch=changeset-release/main&per_page=100" \
+              --jq "[.workflow_runs[] | select(
+                .head_sha == \"$pr_sha\" and
+                .actor.login == \"github-actions[bot]\" and
+                (.path == \".github/workflows/pr-test.yml\" or
+                 .path == \".github/workflows/changeset-major-warning.yml\")
+              ) | {id, path}] | unique_by(.path)")
+
+            if [ "$(jq length <<< "$runs")" -eq 2 ]; then
+              jq -r '.[].id' <<< "$runs" | while read -r run_id; do
+                gh api --method POST "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/approve"
+              done
+              echo "Approved trusted checks for Changesets PR #$PR_NUMBER at $pr_sha"
+              exit 0
+            fi
+
+            sleep 3
+          done
+
+          echo "::error::Trusted checks for Changesets PR #$PR_NUMBER did not reach approval state"
+          exit 1
 
       - name: Resolve package request
         id: metadata

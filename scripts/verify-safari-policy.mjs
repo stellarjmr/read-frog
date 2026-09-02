@@ -92,6 +92,12 @@ check(
   "release metadata must wait for Apple credential preflight",
 )
 check(
+  releaseWorkflow.includes("actions: write") &&
+    releaseWorkflow.includes("steps.changesets.outputs.pr-number") &&
+    releaseWorkflow.includes("/approve"),
+  "release workflow must approve checks only for its trusted Changesets pull request",
+)
+check(
   releaseWorkflow.includes("xcrun notarytool history"),
   "release workflow must authenticate with the notary service before tagging",
 )
