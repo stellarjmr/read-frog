@@ -13,7 +13,8 @@ Manifest V3 build, and distribute the persistent macOS Safari extension through
 
 - Upstream merged through `02ad422c` (`fix(translate): serve remounted paragraphs
 from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
-  the working branch.
+  fork `main` at `512b7ca1`. The deployed no-change sync path passed in run
+  `33632190240`.
 - The WXT build target is locked to Safari MV3 with Safari 18.0 as the minimum.
 - Chrome, Edge, Firefox, offscreen, and side-panel build artifacts are excluded.
 - Raw Safari WebExtension build and verification work locally.
@@ -24,10 +25,13 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
   run: `33631487209` on commit `26fe3adb`.
 - GitHub release automation covers raw WebExtension ZIPs plus the signed,
   notarized app and cask contract, but the stable macOS app/Homebrew release is
-  not yet publishable without credentials.
+  not yet publishable without credentials. Changesets PR #1 has been refreshed
+  for `@read-frog/extension@2.0.0` and contains every current upstream and
+  Safari-distribution changeset.
 - `stellarjmr/homebrew-tool` exists and is already tapped locally. It does not
   yet contain a `read-frog` cask; its verified-release polling workflow is
-  deployed at `b8151ca`.
+  deployed at `57014bd`. Its no-release path passed in run `33632366290`, so it
+  safely skips publishing until signed and notarized assets exist.
 
 ## Intentional Safari Divergence
 
