@@ -17,10 +17,17 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
 - The WXT build target is locked to Safari MV3 with Safari 18.0 as the minimum.
 - Chrome, Edge, Firefox, offscreen, and side-panel build artifacts are excluded.
 - Raw Safari WebExtension build and verification work locally.
-- GitHub release automation exists for raw WebExtension ZIPs, but the stable
-  macOS app/Homebrew release is not yet publishable.
+- The generated unsigned macOS container has passed the real GitHub macOS/Xcode
+  smoke workflow. Downloaded artifact evidence confirms a Universal
+  `Read Frog.app`, the `com.zhimin.readfrog` / `.Extension` bundle hierarchy,
+  the embedded Safari MV3 manifest, and valid ad-hoc deep signatures. Verified
+  run: `33631487209` on commit `26fe3adb`.
+- GitHub release automation covers raw WebExtension ZIPs plus the signed,
+  notarized app and cask contract, but the stable macOS app/Homebrew release is
+  not yet publishable without credentials.
 - `stellarjmr/homebrew-tool` exists and is already tapped locally. It does not
-  yet contain a `read-frog` cask.
+  yet contain a `read-frog` cask; its verified-release polling workflow is
+  deployed at `b8151ca`.
 
 ## Intentional Safari Divergence
 
@@ -36,7 +43,7 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
 Any new divergence must be added here. Prefer an adapter or reduced Safari UI
 over deleting upstream domain logic.
 
-## Automation Being Established
+## Established Automation
 
 - `.github/workflows/sync-upstream.yml`: scheduled/manual upstream merge,
   candidate branch, Safari policy/build/test/app-container gates, then
@@ -72,14 +79,13 @@ release PR:
 
 ## Next Verified Milestones
 
-1. Run the unsigned macOS packaging workflow on GitHub's macOS runner and fix
-   any packager/Xcode drift.
-2. Add the six signing/notary secrets and run the release workflow against a
-   release candidate tag.
+1. Add the seven signing/notary secrets and rerun the unsigned packaging smoke
+   workflow after any credential-driven script adjustment.
+2. Merge the open Changesets release PR; its preflight will refuse to create a
+   tag if any release secret is missing.
 3. Verify `codesign`, Gatekeeper assessment, notarization, and stapling on the
    downloaded release app.
 4. Let the tap publish `Casks/read-frog.rb`, then verify from a clean state with
    `brew install --cask stellarjmr/tool/read-frog` and enable the extension in
    Safari Settings.
-5. Only after that end-to-end check, merge the open Changesets release PR and
-   mark Homebrew distribution ready.
+5. Only after that end-to-end check, mark Homebrew distribution ready here.
