@@ -45,8 +45,9 @@ function run(command, args, options = {}) {
     cwd: rootDirectory,
     encoding: "utf8",
     env: process.env,
+    input: options.input,
     maxBuffer: 20 * 1024 * 1024,
-    stdio: capture ? ["ignore", "pipe", "pipe"] : "inherit",
+    stdio: capture ? ["pipe", "pipe", "pipe"] : "inherit",
   })
 
   if (result.error) throw result.error
@@ -56,6 +57,18 @@ function run(command, args, options = {}) {
   }
 
   return result.stdout ?? ""
+}
+
+function readEntitlements(bundlePath) {
+  const propertyList = run("codesign", ["--display", "--xml", "--entitlements", "-", bundlePath], {
+    capture: true,
+  })
+  return JSON.parse(
+    run("plutil", ["-convert", "json", "-o", "-", "--", "-"], {
+      capture: true,
+      input: propertyList,
+    }),
+  )
 }
 
 function hasXcrunTool(tool) {
@@ -214,7 +227,16 @@ if (signed) {
     "OTHER_CODE_SIGN_FLAGS=--timestamp",
   )
 } else {
-  buildArguments.push("CODE_SIGNING_ALLOWED=NO")
+  buildArguments.push(
+    "CODE_SIGNING_ALLOWED=YES",
+    "CODE_SIGNING_REQUIRED=YES",
+    "CODE_SIGN_STYLE=Manual",
+    "CODE_SIGN_IDENTITY=-",
+    "AD_HOC_CODE_SIGNING_ALLOWED=YES",
+    "DEVELOPMENT_TEAM=",
+    "PROVISIONING_PROFILE_SPECIFIER=",
+    "PROVISIONING_PROFILE=",
+  )
 }
 
 buildArguments.push("build")
@@ -232,11 +254,21 @@ await rm(stagingDirectory, { recursive: true, force: true })
 await mkdir(stagingDirectory, { recursive: true })
 run("ditto", ["--noextattr", "--norsrc", builtAppPath, stagedAppPath])
 
-if (unsigned) {
-  run("codesign", ["--force", "--deep", "--sign", "-", stagedAppPath])
+run("codesign", ["--verify", "--deep", "--strict", "--verbose=2", stagedAppPath])
+
+const stagedExtensions = await findDirectories(stagedAppPath, (_entryPath, name) =>
+  name.endsWith(".appex"),
+)
+if (stagedExtensions.length === 0) {
+  throw new Error("The generated macOS app contains no extension bundle")
+}
+for (const extensionPath of stagedExtensions) {
+  const entitlements = readEntitlements(extensionPath)
+  if (entitlements["com.apple.security.app-sandbox"] !== true) {
+    throw new Error(`The generated extension is not sandboxed: ${extensionPath}`)
+  }
 }
 
-run("codesign", ["--verify", "--deep", "--strict", "--verbose=2", stagedAppPath])
 await createZip()
 
 if (notarize) {

@@ -77,7 +77,13 @@ brew update
 brew install --cask stellarjmr/tool/read-frog
 codesign --verify --deep --strict --verbose=2 "/Applications/Read Frog.app"
 codesign --display --verbose=4 "/Applications/Read Frog.app" 2>&1 | grep "Signature=adhoc"
+extension_path=$(find "/Applications/Read Frog.app/Contents/PlugIns" -name '*.appex' -type d -print -quit)
+codesign --display --xml --entitlements - "$extension_path" 2>/dev/null \
+  | plutil -extract 'com\.apple\.security\.app-sandbox' raw -
 ```
+
+The final command must print `true`. PlugInKit rejects a Safari extension that
+loses its App Sandbox entitlement even when the app's deep signature verifies.
 
 `spctl --assess` and `xcrun stapler validate` are expected to reject this build;
 passing either check would mean the documented unsigned contract no longer

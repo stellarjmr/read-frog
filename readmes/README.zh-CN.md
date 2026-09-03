@@ -83,9 +83,9 @@ Read Frog 的愿景是为各个级别的语言学习者提供易于使用、智�
 brew install --cask stellarjmr/tool/read-frog
 ```
 
-安装后先打开一次 **Read Frog**，再前往 **Safari > 设置 > 扩展** 启用它并授予所需的网站访问权限。之后可运行 `brew upgrade --cask stellarjmr/tool/read-frog` 升级。
+此 fork 的 Homebrew App 仅使用 **ad-hoc 签名，未经 Apple 公证**。如果 macOS 阻止首次启动，请前往 **系统设置 > 隐私与安全性**，为 Read Frog 选择 **仍要打开**。
 
-首个 Developer ID 签名并通过 Apple 公证的版本发布后，cask 才会自动上线。在此门禁通过前，请查看 [STATUS.md](../STATUS.md)，不要把未签名构建当作永久安装版本。
+在 Safari 17 或更高版本中，先到 **Safari > 设置 > 高级** 启用 **显示网页开发者功能**，再到 **Safari > 设置 > 开发者** 启用 **允许未签名的扩展**。打开一次 Read Frog，然后在 **Safari > 设置 > 扩展** 中启用它并授予所需的网站访问权限。Safari 每次退出时都会重置“允许未签名的扩展”，因此每次重启 Safari 后都需要重新启用。之后可运行 `brew upgrade --cask stellarjmr/tool/read-frog` 升级。
 
 开发时可进行本地构建与临时加载：
 
@@ -95,7 +95,7 @@ brew install --cask stellarjmr/tool/read-frog
 4. 在 **Safari > 设置 > 高级** 中启用 **显示网页开发者功能**。
 5. 打开 Safari 设置中的 **开发者** 标签页，点击 **添加临时扩展**，然后选中 `.output/safari-mv3`。
 
-原始开发压缩包的名称为 `read-frogextension-*-safari.zip`。临时加载方法请参考 Apple 的 [运行 Safari Web Extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) 文档。稳定的 Homebrew 版本使用已签名并公证的 `Read-Frog-*-macos.zip` app 容器，具体流程见 [HOMEBREW_RELEASE.md](../HOMEBREW_RELEASE.md)。
+原始开发压缩包的名称为 `read-frogextension-*-safari.zip`。临时加载方法请参考 Apple 的 [运行 Safari Web Extension](https://developer.apple.com/documentation/safariservices/running-your-safari-web-extension) 文档。Homebrew 版本使用明确标注为未签名的 `Read-Frog-*-macos-unsigned.zip` App 容器；其安全模型和安装步骤见 [HOMEBREW_RELEASE.md](../HOMEBREW_RELEASE.md)。
 
 ### 社区
 

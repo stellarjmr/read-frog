@@ -1,6 +1,6 @@
 # Safari Fork Status
 
-Last audited: 2026-09-02
+Last audited: 2026-09-03
 
 ## Objective
 
@@ -11,10 +11,12 @@ Manifest V3 build, and distribute the persistent macOS Safari extension through
 
 ## Current State
 
-- Upstream merged through `02ad422c` (`fix(translate): serve remounted paragraphs
-from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
-  the local fork history. The deployed no-change sync path passed in run
-  `33632190240`.
+- Upstream product changes are merged through `02ad422c`, whose subject is
+  `fix(translate): serve remounted paragraphs from an in-tab memory tier`. A
+  2026-09-03 fetch found the newer upstream release commit `9b44f82e`;
+  `upstream/main...HEAD` is now `1 19`, so the fork is one complete upstream
+  commit behind pending the next sync. The previously deployed no-change sync
+  path passed in run `33632190240`.
 - The WXT build target is locked to Safari MV3 with Safari 18.0 as the minimum.
 - Chrome, Edge, Firefox, offscreen, and side-panel build artifacts are excluded.
 - Raw Safari WebExtension build and verification work locally.
@@ -40,6 +42,24 @@ from an in-tab memory tier`). At this audit, `upstream/main` is an ancestor of
   `brew install --cask stellarjmr/tool/read-frog` succeeded and left version
   `2.0.0` at `/Applications/Read Frog.app`; both the app and embedded extension
   pass strict codesign integrity verification.
+- Runtime testing on 2026-09-03 found that release `v2.0.0` is not usable as a
+  Safari extension: its post-build recursive ad-hoc signing discarded the
+  embedded extension's App Sandbox entitlement. PlugInKit consequently rejects
+  it with `plug-ins must be sandboxed`, so it does not appear in Safari's
+  Extensions settings even though deep signature verification passes. A local
+  entitlement-preserving re-sign confirmed the diagnosis by making PlugInKit
+  register `com.zhimin.readfrog.Extension` immediately, but Safari 27 still did
+  not expose that manually repaired app-container extension. Loading the same
+  verified `.output/safari-mv3` directory as a temporary extension did expose
+  and successfully open Read Frog's settings page.
+- The packaging source now delegates ad-hoc signing to Xcode and rejects any
+  output whose `.appex` lacks `com.apple.security.app-sandbox`. A clean Xcode 27
+  build on 2026-09-03 produced an ad-hoc-signed app whose embedded extension
+  retained the sandbox entitlement. After installing that artifact on macOS 27,
+  Safari 27 listed Read Frog under Installed, enabled it with all-site access,
+  and opened its options page. A controlled Safari quit/relaunch also passed:
+  after the documented unsigned-extension approval and app relaunch, the
+  installed extension returned without temporary loading.
 - Pull request #3 merged the unsigned release path at `f47c22dd`. A follow-up
   release fix at `c76307f4` makes optional analytics secrets genuinely optional
   and was used for the successful `v2.0.0` rebuild.
@@ -100,9 +120,11 @@ GitHub CLI authentication and Git HTTPS credential integration are active for
 
 ## Distribution Readiness
 
-The unsigned Homebrew distribution path is ready and verified end to end. The
-remaining first-run actions are intentionally manual security decisions: approve
-Read Frog in macOS Privacy & Security if Gatekeeper blocks it, enable Safari's
-unsigned-extension developer setting, open Read Frog once, and enable the
-extension. Continue validating future upstream syncs and releases with the
-established automation above.
+The released `v2.0.0` Homebrew artifact is blocked by the missing App Sandbox
+entitlement and must not be described as ready. The source fix has passed a
+full-Xcode package run and an end-to-end Safari 27 runtime test; permanent public
+distribution now requires a new Changesets release and cask update. The
+remaining first-run actions are intentionally manual security decisions:
+approve Read Frog in macOS Privacy & Security if Gatekeeper blocks it, enable
+Safari's unsigned-extension developer setting, open Read Frog once, and enable
+the extension.
