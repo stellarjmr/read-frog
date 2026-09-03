@@ -36,12 +36,13 @@ Manifest V3 build, and distribute the persistent macOS Safari extension through
   SHA-256 `e6824839badde5f1ca6dcc2351ab081e02e7c35e4b56092b1987ae06f9dabb5a`,
   confirmed `Signature=adhoc`, found no signing authority or notarization
   ticket, and confirmed the expected Gatekeeper rejection.
-- `stellarjmr/homebrew-tool` publishes `Casks/read-frog.rb` at tap commit
-  `0732888f`. Tap run `33650280373` passed strict audit and a clean install /
-  uninstall test. A separate local install with
-  `brew install --cask stellarjmr/tool/read-frog` succeeded and left version
-  `2.0.0` at `/Applications/Read Frog.app`; both the app and embedded extension
-  pass strict codesign integrity verification.
+- `stellarjmr/homebrew-tool` publishes `Casks/read-frog.rb` for `v2.0.1` at tap
+  commit `56e4cc6b`. Tap run `33776209019` passed release-contract validation,
+  strict audit, and a clean install / uninstall test. A separate local
+  `brew reinstall --cask stellarjmr/tool/read-frog` upgraded the installed app
+  to `2.0.1` at `/Applications/Read Frog.app`; both the app and embedded
+  extension pass strict codesign integrity verification, and the extension
+  retains `com.apple.security.app-sandbox=true`.
 - Runtime testing on 2026-09-03 found that release `v2.0.0` is not usable as a
   Safari extension: its post-build recursive ad-hoc signing discarded the
   embedded extension's App Sandbox entitlement. PlugInKit consequently rejects
@@ -60,6 +61,16 @@ Manifest V3 build, and distribute the persistent macOS Safari extension through
   and opened its options page. A controlled Safari quit/relaunch also passed:
   after the documented unsigned-extension approval and app relaunch, the
   installed extension returned without temporary loading.
+- Changesets release PR #4 merged as `7d67fe53` and published GitHub Release
+  `v2.0.1`. Release run `33775023029` built and uploaded the corrected unsigned
+  app, Safari archive, source archive, and generated cask. Independent download
+  verification matched SHA-256
+  `b0150e1e194d52ba446d3cb4604a0ccdccb2bfe9128a0e6ad9cc9f9e0391be80`,
+  confirmed valid ad-hoc app and extension signatures, and machine-verified the
+  extension sandbox entitlement. After the local Homebrew upgrade and one
+  PlugInKit registry refresh for the replaced test installation, Safari 27
+  listed enabled version `2.0.1` under Installed and its Settings button opened
+  the extension `options.html` page.
 - Pull request #3 merged the unsigned release path at `f47c22dd`. A follow-up
   release fix at `c76307f4` makes optional analytics secrets genuinely optional
   and was used for the successful `v2.0.0` rebuild.
@@ -120,11 +131,11 @@ GitHub CLI authentication and Git HTTPS credential integration are active for
 
 ## Distribution Readiness
 
-The released `v2.0.0` Homebrew artifact is blocked by the missing App Sandbox
-entitlement and must not be described as ready. The source fix has passed a
-full-Xcode package run and an end-to-end Safari 27 runtime test; permanent public
-distribution now requires a new Changesets release and cask update. The
-remaining first-run actions are intentionally manual security decisions:
-approve Read Frog in macOS Privacy & Security if Gatekeeper blocks it, enable
-Safari's unsigned-extension developer setting, open Read Frog once, and enable
-the extension.
+Release `v2.0.1` and its Homebrew cask are ready for unsigned distribution.
+Release `v2.0.0` remains superseded because its embedded extension lacks the App
+Sandbox entitlement. The remaining first-run actions are intentionally manual
+security decisions: approve Read Frog in macOS Privacy & Security if Gatekeeper
+blocks it, enable Safari's unsigned-extension developer setting, open Read Frog
+once, and enable the extension. Safari resets the unsigned-extension setting
+whenever it quits, so that approval cannot be made persistent without an Apple
+Developer ID distribution path.
