@@ -1,5 +1,11 @@
 # @read-frog/extension
 
+## 2.0.1
+
+### Patch Changes
+
+- [`7b25ff4`](https://github.com/stellarjmr/read-frog/commit/7b25ff4520a7337d89dc65cf947daeadb3deddbf) Thanks [@stellarjmr](https://github.com/stellarjmr)! - fix(distribution): preserve Safari extension sandbox entitlements in unsigned macOS packages
+
 ## 2.0.0
 
 ### Major Changes
