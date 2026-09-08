@@ -62,5 +62,5 @@ export async function setupUninstallSurvey() {
   url.searchParams.set("os", getOS())
   url.searchParams.set("ui_lang", getUILang())
 
-  void browser.runtime.setUninstallURL(url.toString())
+  void browser.runtime.setUninstallURL?.(url.toString())
 }

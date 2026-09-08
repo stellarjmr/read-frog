@@ -13,6 +13,11 @@ export function newUserGuide() {
 }
 
 export async function guidePinExtension() {
+  if (typeof browser.action.getUserSettings !== "function") {
+    // Safari exposes enabled extensions in its toolbar without Chrome's pin API.
+    onMessage("getPinState", async () => true)
+    return
+  }
   onMessage("getPinState", async () => {
     const { isOnToolbar } = await browser.action.getUserSettings()
     return isOnToolbar

@@ -1,3 +1,5 @@
+> **macOS Safari fork:** [安装、构建与自动更新说明](SAFARI.md) · [Safari 下载](https://github.com/stellarjmr/read-frog/releases/latest) · [每日上游同步](https://github.com/stellarjmr/read-frog/actions/workflows/safari.yml)
+
 <div align="center"><a name="readme-top"></a>
 
 [![Read Frog banner][image-banner]][website]

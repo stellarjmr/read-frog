@@ -217,32 +217,35 @@ describe("setupTTSPlaybackMessageHandlers", () => {
     expect(createDocumentMock).toHaveBeenCalledTimes(1)
   })
 
-  it("uses background DOM audio playback in Firefox when offscreen is unavailable", async () => {
-    vi.stubEnv("BROWSER", "firefox")
-    const { FakeAudio, revokeObjectURLMock } = installFakeAudio()
+  it.each(["firefox", "safari"])(
+    "uses background DOM audio playback in %s when offscreen is unavailable",
+    async (browserName) => {
+      vi.stubEnv("BROWSER", browserName)
+      const { FakeAudio, revokeObjectURLMock } = installFakeAudio()
 
-    const { setupTTSPlaybackMessageHandlers } = await import("../tts-playback")
-    setupTTSPlaybackMessageHandlers()
-    const startHandler = getRegisteredMessageHandler<{ ok: boolean }>("ttsPlaybackStart")
+      const { setupTTSPlaybackMessageHandlers } = await import("../tts-playback")
+      setupTTSPlaybackMessageHandlers()
+      const startHandler = getRegisteredMessageHandler<{ ok: boolean }>("ttsPlaybackStart")
 
-    const playbackPromise = startHandler({
-      data: {
-        requestId: "req-firefox",
-        audioBase64: "ZmFrZQ==",
-        contentType: "audio/mpeg",
-      },
-    })
-    await Promise.resolve()
+      const playbackPromise = startHandler({
+        data: {
+          requestId: "req-firefox",
+          audioBase64: "ZmFrZQ==",
+          contentType: "audio/mpeg",
+        },
+      })
+      await Promise.resolve()
 
-    expect(FakeAudio.instances).toHaveLength(1)
-    expect(FakeAudio.instances[0]!.play).toHaveBeenCalled()
-    expect(sendMessageMock).not.toHaveBeenCalled()
+      expect(FakeAudio.instances).toHaveLength(1)
+      expect(FakeAudio.instances[0]!.play).toHaveBeenCalled()
+      expect(sendMessageMock).not.toHaveBeenCalled()
 
-    FakeAudio.instances[0]!.onended?.()
+      FakeAudio.instances[0]!.onended?.()
 
-    await expect(playbackPromise).resolves.toEqual({ ok: true })
-    expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:tts-test")
-  })
+      await expect(playbackPromise).resolves.toEqual({ ok: true })
+      expect(revokeObjectURLMock).toHaveBeenCalledWith("blob:tts-test")
+    },
+  )
 
   it("stops only the active Firefox background playback request", async () => {
     vi.stubEnv("BROWSER", "firefox")
