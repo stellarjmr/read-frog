@@ -139,6 +139,10 @@ ditto -c -k --sequesterRsrc --keepParent "$output/$app_name" "$artifacts/Read-Fr
   cd "$artifacts"
   shasum -a 256 Read-Frog-Safari-macOS.zip Read-Frog-Safari-Xcode.zip > SHA256SUMS
 )
+# Xcode registers its build product with Launch Services. Keep that generated
+# copy out of Safari's extension list; install.sh registers the installed copy.
+/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$app"
+pluginkit -r "$extension" >/dev/null 2>&1 || true
 printf '%s\n' "$app" > "$output/app-path"
 echo "Safari app: $app"
 echo "Downloads: $artifacts"
