@@ -24,11 +24,16 @@ cleanup() {
 trap cleanup EXIT
 python3 safari/smoke-server.py "$temporary/port" > "$output/server.log" 2>&1 &
 server_pid=$!
-for attempt in {1..50}; do
+for attempt in {1..300}; do
   [[ -f "$temporary/port" ]] && break
   kill -0 "$server_pid"
   sleep 0.1
 done
+if [[ ! -f "$temporary/port" ]]; then
+  cat "$output/server.log" >&2
+  echo 'Loopback fixture did not become ready within 30 seconds.' >&2
+  exit 1
+fi
 origin="http://127.0.0.1:$(cat "$temporary/port")"
 xcrun swiftc -target "$(uname -m)-apple-macos15.4" -parse-as-library \
   safari/smoke.swift -o "$temporary/smoke"
