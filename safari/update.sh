@@ -14,8 +14,15 @@ if [[ "$(git branch --show-current)" != main || -n "$(git status --porcelain)" ]
   exit 1
 fi
 git fetch origin main
+previous_sha="$(git rev-parse HEAD)"
 git merge --ff-only origin/main
 source_sha="$(git rev-parse HEAD)"
+if [[ "$previous_sha" != "$source_sha" ]]; then
+  # Use the newly fetched updater too, including any new validation rules.
+  rmdir "$state_dir/update.lock"
+  trap - EXIT
+  exec /bin/bash safari/update.sh
+fi
 if [[ "$source_sha" != "$(git rev-parse origin/main)" ]]; then
   echo 'Local main contains unpublished commits. Push and validate them before updating the installed app.' >&2
   exit 1
