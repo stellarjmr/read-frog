@@ -25,6 +25,23 @@ import WebKit
 }
 @MainActor final class TestBrowser: NSObject, WKWebExtensionControllerDelegate {
   let window = TestWindow()
+  var backgroundWindow: NSWindow?
+
+  // Test-host plumbing only: unattached WKWebViews defer media loading. Safari
+  // owns its background views; this standalone host must supply a native window.
+  // This WebKit delegate hook is never included in the packaged Safari app.
+  @objc(_webExtensionController:didCreateBackgroundWebView:forExtensionContext:)
+  func backgroundCreated(
+    _ controller: WKWebExtensionController, view: WKWebView, context: WKWebExtensionContext
+  ) {
+    let host = NSWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 100, height: 100), styleMask: [.titled],
+      backing: .buffered, defer: false)
+    host.contentView = view
+    host.orderBack(nil)
+    backgroundWindow = host
+  }
+
   func webExtensionController(
     _ controller: WKWebExtensionController, openWindowsFor context: WKWebExtensionContext
   ) -> [any WKWebExtensionWindow] { [window] }
@@ -117,6 +134,17 @@ func require(_ condition: Bool, _ message: String) throws {
         await browser.storage.local.set({config});
         const tts = await browser.runtime.sendMessage({id:1,type:'ttsPlaybackPrepare',timestamp:Date.now()});
         if (!tts?.res?.ok) throw Error('Background DOM audio unavailable: '+JSON.stringify(tts));
+        // A valid 100 ms PCM WAV exercises decoding, playback, and the ended
+        // event through the production background message handler.
+        const wav=new Uint8Array(4844), d=new DataView(wav.buffer);
+        for(const [at,text] of [[0,'RIFF'],[8,'WAVE'],[12,'fmt '],[36,'data']]) [...text].forEach((c,i)=>wav[at+i]=c.charCodeAt(0));
+        d.setUint32(4,4836,true); d.setUint32(16,16,true); d.setUint16(20,1,true); d.setUint16(22,1,true);
+        d.setUint32(24,24000,true); d.setUint32(28,48000,true); d.setUint16(32,2,true); d.setUint16(34,16,true); d.setUint32(40,4800,true);
+        const played=await Promise.race([
+          browser.runtime.sendMessage({id:42,type:'ttsPlaybackStart',timestamp:Date.now(),data:{requestId:'safari-smoke-audio',audioBase64:btoa(String.fromCharCode(...wav)),contentType:'audio/wav'}}),
+          new Promise((_,reject)=>setTimeout(()=>reject(Error('Audio playback timed out')),10000))
+        ]);
+        if(!played?.res?.ok) throw Error('Audio playback failed: '+JSON.stringify(played));
         return document.body.innerText.includes('API Providers');
         """, arguments: ["origin": CommandLine.arguments[2]], in: nil, contentWorld: .page)
       try require(bootstrap as? Bool == true, "Options UI did not render")
@@ -127,7 +155,7 @@ func require(_ condition: Bool, _ message: String) throws {
         try png.write(
           to: URL(fileURLWithPath: CommandLine.arguments[3]).appendingPathComponent("options.png"))
       }
-      print("PASS: config initialized, options rendered, DOM audio prepared")
+      print("PASS: config initialized, options rendered, background audio played to completion")
       let pageConfig = WKWebViewConfiguration()
       pageConfig.webExtensionController = controller
       let page = WKWebView(

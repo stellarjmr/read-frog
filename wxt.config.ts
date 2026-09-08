@@ -102,6 +102,19 @@ export default defineConfig({
       manifest.permissions = manifest.permissions?.filter(
         (permission) => !["identity", "offscreen", "sidePanel"].includes(permission),
       )
+      // Older Safari/WebKit rejects file:// in web_accessible_resources.
+      // Safari's supported page targets here are ordinary HTTP(S) websites.
+      manifest.web_accessible_resources = manifest.web_accessible_resources?.map((resource) =>
+        typeof resource === "string"
+          ? resource
+          : {
+              ...resource,
+              matches: resource.matches?.filter((pattern) => !pattern.startsWith("file:")),
+            },
+      )
+      for (const script of manifest.content_scripts ?? []) {
+        script.matches = script.matches?.filter((pattern) => !pattern.startsWith("file:"))
+      }
     },
     "vite:build:extendConfig": (entrypoints, viteConfig) => {
       const entrypoint = entrypoints.length === 1 ? entrypoints[0] : undefined

@@ -75,6 +75,7 @@ bash safari/auto-update.sh disable
 - Safari 不提供 `browser.identity`；Google Drive 登录入口隐藏，设置可通过导出 / 导入同步。官方服务账号和自定义 API 服务商沿用上游行为。
 - Safari 没有 Chrome 的侧栏接口，侧栏入口改为打开或复用扩展标签页。上游侧栏当前仍为占位页面。
 - 不调用 Safari 缺少的卸载回调和 Chrome 工具栏固定接口。
+- Safari 构建仅匹配 HTTP(S) 网页，移除旧版 WebKit 不接受的 `file://` 资源声明。
 - 转换器可能提示 `type`、`persistent`、`world`；WebKit 支持这些字段，保留它们以正确运行模块后台与 MAIN world 内容脚本。转换器提示仍需结合实际 WebKit 运行验证。
 
 本地检查：
@@ -89,4 +90,4 @@ bash safari/smoke.sh
 
 遵循仓库 `AGENTS.md`，自动化测试跳过依赖真实翻译服务的 `free-api.test.ts`。首次启用或上游大版本更新后，应在 Safari 验证：弹出菜单和设置页、整页翻译及恢复、划词翻译、音频播放、字幕，以及重启 Safari 后设置是否保留。CI 的单元测试和应用构建不能代替 Safari 中的完整交互测试。
 
-`safari/smoke.sh` 需要 macOS 15.4+ 和对应的 Xcode SDK。它使用系统 WebKit 加载真实的生产扩展，在独立扩展存储中验证设置初始化、设置页渲染、后台音频准备、页面注入、双语翻译和恢复原文。翻译服务使用本地 HTTP 测试接口，不需要 API 密钥，也不修改 Safari 里的用户设置；这不验证真实服务商的翻译质量或账号配置。日志和截图位于 `.output/safari-qa/`，GitHub 构建也会执行并保存这些证据。
+`safari/smoke.sh` 需要 macOS 15.4+ 和对应的 Xcode SDK。它使用系统 WebKit 加载真实的生产扩展，在独立扩展存储中验证设置初始化、设置页渲染、后台音频完整播放、页面注入、双语翻译和恢复原文。测试宿主将后台 WebView 挂载到原生窗口，避免无窗口 WebView 延迟加载媒体；这段测试代码不进入 Safari 应用。翻译服务使用本地 HTTP 测试接口，不需要 API 密钥，也不修改 Safari 里的用户设置；这不验证真实服务商的翻译质量或账号配置。日志和截图位于 `.output/safari-qa/`，GitHub 构建也会执行并保存这些证据。
