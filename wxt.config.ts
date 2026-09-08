@@ -104,14 +104,11 @@ export default defineConfig({
       )
       // Older Safari/WebKit rejects file:// in web_accessible_resources.
       // Safari's supported page targets here are ordinary HTTP(S) websites.
-      manifest.web_accessible_resources = manifest.web_accessible_resources?.map((resource) =>
-        typeof resource === "string"
-          ? resource
-          : {
-              ...resource,
-              matches: resource.matches?.filter((pattern) => !pattern.startsWith("file:")),
-            },
-      )
+      for (const resource of manifest.web_accessible_resources ?? []) {
+        if (typeof resource !== "string" && resource.matches) {
+          resource.matches = resource.matches.filter((pattern) => !pattern.startsWith("file:"))
+        }
+      }
       for (const script of manifest.content_scripts ?? []) {
         script.matches = script.matches?.filter((pattern) => !pattern.startsWith("file:"))
       }
