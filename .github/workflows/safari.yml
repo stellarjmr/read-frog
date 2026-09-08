@@ -87,6 +87,21 @@ jobs:
           path: .output/safari-artifacts/
           if-no-files-found: error
 
+      - name: Exercise translation in WebKit
+        if: steps.source.outputs.needed == 'true'
+        run: bash safari/smoke.sh
+
+      - name: Upload WebKit evidence and packaging diagnostics
+        if: always() && steps.source.outputs.needed == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: safari-diagnostics-${{ github.run_number }}
+          path: |
+            .output/safari-qa/
+            .output/safari-macos/build.log
+            .output/safari-macos/project-info.json
+          if-no-files-found: warn
+
       - name: Update fork only after validation
         if: steps.source.outputs.needed == 'true'
         run: git push origin HEAD:main

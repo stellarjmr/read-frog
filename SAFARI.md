@@ -84,6 +84,9 @@ pnpm fmt:check
 pnpm lint
 SKIP_FREE_API=true pnpm test
 pnpm safari:package
+bash safari/smoke.sh
 ```
 
 遵循仓库 `AGENTS.md`，自动化测试跳过依赖真实翻译服务的 `free-api.test.ts`。首次启用或上游大版本更新后，应在 Safari 验证：弹出菜单和设置页、整页翻译及恢复、划词翻译、音频播放、字幕，以及重启 Safari 后设置是否保留。CI 的单元测试和应用构建不能代替 Safari 中的完整交互测试。
+
+`safari/smoke.sh` 需要 macOS 15.4+ 和对应的 Xcode SDK。它使用系统 WebKit 加载真实的生产扩展，在独立扩展存储中验证设置初始化、设置页渲染、后台音频准备、页面注入、双语翻译和恢复原文。翻译服务使用本地 HTTP 测试接口，不需要 API 密钥，也不修改 Safari 里的用户设置；这不验证真实服务商的翻译质量或账号配置。日志和截图位于 `.output/safari-qa/`，GitHub 构建也会执行并保存这些证据。
