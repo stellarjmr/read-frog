@@ -58,12 +58,27 @@ def bundle_id(match):
     suffix = ".Extension" if match[1].strip('"').endswith(".Extension") else ""
     return "PRODUCT_BUNDLE_IDENTIFIER = com.github.stellarjmr.ReadFrogSafari" + suffix + ";"
 content, count = re.subn(r"PRODUCT_BUNDLE_IDENTIFIER = ([^;]+);", bundle_id, project.read_text())
-if count != 4:
-    raise SystemExit(f"Unexpected Xcode project: expected four bundle IDs, found {count}")
+if count not in (4, 8):
+    raise SystemExit(f"Unexpected Xcode project: expected four or eight bundle IDs, found {count}")
 project.write_text(content)
 PY
 
-if ! xcodebuild -project "$project" -scheme "$app_name" \
+# Older converters emit a multiplatform project with a '(macOS)' scheme even
+# for --macos-only; newer Xcode emits one scheme named after the app.
+xcodebuild -list -json -project "$project" > "$output/project-info.json"
+scheme="$(python3 - "$output/project-info.json" "$app_name" <<'PY'
+import json, sys
+schemes = json.load(open(sys.argv[1]))["project"]["schemes"]
+for candidate in (sys.argv[2], sys.argv[2] + " (macOS)"):
+    if candidate in schemes:
+        print(candidate)
+        break
+else:
+    raise SystemExit(f"No macOS scheme found: {schemes}")
+PY
+)"
+
+if ! xcodebuild -project "$project" -scheme "$scheme" \
   -configuration Release -derivedDataPath "$derived_data" \
   -destination 'generic/platform=macOS' \
   CODE_SIGNING_ALLOWED=NO MACOSX_DEPLOYMENT_TARGET=14.0 \
