@@ -33,6 +33,35 @@ then
   echo "Already installed: $source_sha"
   exit 0
 fi
+# A main push can still be running (or have failed) in CI. Only a release is
+# evidence that the source passed the complete Safari validation workflow.
+released_sha="$(python3 - <<'PY'
+import json, re, urllib.request
+request = urllib.request.Request(
+    "https://api.github.com/repos/stellarjmr/read-frog/releases/latest",
+    headers={"Accept": "application/vnd.github+json", "User-Agent": "Read-Frog-Safari-Updater"},
+)
+with urllib.request.urlopen(request, timeout=30) as response:
+    release = json.load(response)
+sha = release["target_commitish"]
+tag = release["tag_name"]
+assets = {asset["name"] for asset in release["assets"]}
+if (
+    not re.fullmatch(r"[0-9a-f]{40}", sha)
+    or not tag.startswith("safari-v")
+    or not tag.endswith("-" + sha[:12])
+    or release["draft"]
+    or release["prerelease"]
+    or not {"Read-Frog-Safari-macOS.zip", "Read-Frog-Safari-Xcode.zip", "SHA256SUMS"} <= assets
+):
+    raise SystemExit("Latest release is not a validated Safari build; keeping the installed app.")
+print(sha)
+PY
+)"
+if [[ "$source_sha" != "$released_sha" ]]; then
+  echo "Waiting for a validated Safari release of $source_sha; keeping the installed app."
+  exit 0
+fi
 if [[ -z "${SAFARI_SIGN_IDENTITY:-}" && -f "$state_dir/signing-identity" ]]; then
   export SAFARI_SIGN_IDENTITY="$(cat "$state_dir/signing-identity")"
 fi

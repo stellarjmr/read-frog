@@ -3,6 +3,7 @@
 import json
 import pathlib
 import re
+import socketserver
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -35,6 +36,15 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps({"data": translated}).encode())
 
 
-server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+class FixtureServer(ThreadingHTTPServer):
+    def server_bind(self):
+        # HTTPServer normally performs reverse DNS here; CI only needs loopback.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = "localhost"
+        self.server_port = self.server_address[1]
+
+
+server = FixtureServer(("127.0.0.1", 0), Handler)
 pathlib.Path(sys.argv[1]).write_text(str(server.server_port))
+print(f"Fixture ready on 127.0.0.1:{server.server_port}", flush=True)
 server.serve_forever()

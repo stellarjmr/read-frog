@@ -58,7 +58,7 @@ bash safari/update.sh
 bash safari/auto-update.sh enable
 ```
 
-启用脚本会在 `~/Library/Application Support/Read Frog Safari/source` 创建独立克隆，避免 macOS 阻止后台任务访问 `Documents`，也避免影响你的开发目录。保持 pnpm 和 Xcode 可用。自动更新只接受干净的 `main` 和快进更新，构建成功才替换应用，不会丢弃本地修改，也不会退出 Safari。更新后重新打开 Safari 或刷新网页。设置和 API 密钥保留在原 Safari 扩展存储中。
+启用脚本会在 `~/Library/Application Support/Read Frog Safari/source` 创建独立克隆，避免 macOS 阻止后台任务访问 `Documents`，也避免影响你的开发目录。保持 pnpm 和 Xcode 可用。自动更新只接受干净的 `main` 和快进更新，并要求该提交已有通过验证的 Safari Release；CI 尚未通过时保留已安装版本。构建成功才替换应用，不会丢弃本地修改，也不会退出 Safari。更新后重新打开 Safari 或刷新网页。设置和 API 密钥保留在原 Safari 扩展存储中。
 
 日志：`~/Library/Application Support/Read Frog Safari/update.log`。关闭定时更新：
 

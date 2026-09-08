@@ -74,6 +74,10 @@ func require(_ condition: Bool, _ message: String) throws {
     do {
       let ext = try await WKWebExtension(
         resourceBaseURL: URL(fileURLWithPath: CommandLine.arguments[1]))
+      for error in ext.errors {
+        let detail = error as NSError
+        print("Manifest error: domain=\(detail.domain) code=\(detail.code) details=\(detail.userInfo)")
+      }
       try require(ext.errors.isEmpty, "Manifest errors: \(ext.errors)")
       let controller = WKWebExtensionController(configuration: .nonPersistent())
       let context = WKWebExtensionContext(for: ext)
