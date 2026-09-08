@@ -5,7 +5,6 @@ import { GOOGLE_DRIVE_TOKEN_STORAGE_KEY } from "../constants/config"
 import { logger } from "../logger"
 
 const GOOGLE_CLIENT_ID = env.WXT_GOOGLE_CLIENT_ID ?? "YOUR_CLIENT_ID"
-const GOOGLE_REDIRECT_URI = browser.identity.getRedirectURL()
 const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/drive.appdata",
   "https://www.googleapis.com/auth/userinfo.email",
@@ -27,6 +26,13 @@ const googleUserInfoSchema = z.object({
 
 export type GoogleAuthToken = z.infer<typeof googleAuthTokenSchema>
 export type GoogleUserInfo = z.infer<typeof googleUserInfoSchema>
+
+export function isGoogleDriveAuthSupported(): boolean {
+  return (
+    typeof browser.identity?.getRedirectURL === "function" &&
+    typeof browser.identity?.launchWebAuthFlow === "function"
+  )
+}
 
 /**
  * Get token from storage with validation
@@ -58,10 +64,15 @@ async function getTokenFromStorage(): Promise<GoogleAuthToken | null> {
  */
 export async function authenticateGoogleDriveAndSaveTokenToStorage(): Promise<string> {
   try {
+    if (!isGoogleDriveAuthSupported()) {
+      throw new Error(
+        "Google Drive sign-in is unavailable in this browser. Use file export/import to sync settings.",
+      )
+    }
     const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth")
     authUrl.searchParams.set("client_id", GOOGLE_CLIENT_ID)
     authUrl.searchParams.set("response_type", "token")
-    authUrl.searchParams.set("redirect_uri", GOOGLE_REDIRECT_URI)
+    authUrl.searchParams.set("redirect_uri", browser.identity.getRedirectURL())
     authUrl.searchParams.set("scope", GOOGLE_SCOPES.join(" "))
     authUrl.searchParams.set("prompt", "select_account")
 

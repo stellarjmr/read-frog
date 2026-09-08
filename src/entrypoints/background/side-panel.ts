@@ -257,6 +257,33 @@ export function setupSidePanelMessageHandler({
   logger: SidePanelLogger
   registerMessageHandler: typeof onMessage
 }) {
+  if (import.meta.env.BROWSER === "safari") {
+    // Safari has no sidebar API. Keep the upstream panel available in a tab,
+    // reusing it across background restarts instead of creating duplicates.
+    registerMessageHandler("toggleSidePanel", async (message) => {
+      try {
+        const url = extensionBrowser.runtime.getURL("/sidepanel.html")
+        const windowId = message.sender.tab?.windowId
+        const tabs = await extensionBrowser.tabs.query(
+          typeof windowId === "number" ? { windowId } : { currentWindow: true },
+        )
+        const existing = tabs.find((tab) => tab.url === url)
+        if (typeof existing?.id === "number") {
+          await extensionBrowser.tabs.update(existing.id, { active: true })
+        } else {
+          await extensionBrowser.tabs.create({
+            url,
+            ...(typeof windowId === "number" && { windowId }),
+          })
+        }
+        return { ok: true, action: "opened" } as const
+      } catch (error) {
+        logger.error("Failed to open Safari panel tab", error)
+        return { ok: false, reason: "toggle-failed" } as const
+      }
+    })
+    return
+  }
   const windowState = createSidePanelWindowState()
   const sidePanel = getSidePanelApi(extensionBrowser)
   if (sidePanel?.kind !== "chromium-side-panel") {

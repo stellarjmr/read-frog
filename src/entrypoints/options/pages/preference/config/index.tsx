@@ -1,4 +1,5 @@
 import { MAX_BACKUPS_COUNT } from "@/utils/constants/backup"
+import { isGoogleDriveAuthSupported } from "@/utils/google-drive/auth"
 import { i18n } from "@/utils/i18n"
 import { ConfigNavItem } from "../../../components/config-nav-item"
 import { ConfigSection } from "../../../components/config-section"
@@ -9,7 +10,7 @@ import { ResetConfigItem } from "./reset-config"
 export function ConfigManagementSection() {
   return (
     <ConfigSection title={i18n.t("options.preference.config.title")}>
-      <GoogleDriveSyncConfigItem />
+      {isGoogleDriveAuthSupported() && <GoogleDriveSyncConfigItem />}
       <ManualConfigSyncConfigItems />
       <ConfigNavItem
         to="/preference/config-backup"

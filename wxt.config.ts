@@ -48,10 +48,10 @@ export default defineConfig({
       "alarms",
       "cookies",
       "contextMenus",
-      "identity",
+      ...(browser !== "safari" ? ["identity"] : []),
       "scripting",
       "webNavigation",
-      ...(browser !== "firefox" ? ["offscreen", "sidePanel"] : []),
+      ...(!["firefox", "safari"].includes(browser) ? ["offscreen", "sidePanel"] : []),
     ],
     host_permissions: [
       "*://*/*", // Required for scripting.executeScript in any frame
@@ -88,6 +88,21 @@ export default defineConfig({
     excludeSources: ["docs/**/*", "assets/**/*", "repos/**/*", "readmes/**/*"],
   },
   hooks: {
+    "build:manifestGenerated": (wxt, manifest) => {
+      if (wxt.config.browser !== "safari") return
+
+      // Safari has no offscreen API. An MV3 event page provides DOM Audio for
+      // the existing background playback adapter and still suspends when idle.
+      const background = manifest.background
+      const worker =
+        background && "service_worker" in background ? background.service_worker : undefined
+      if (!worker) throw new Error("Safari build requires the WXT background entrypoint")
+      manifest.background = { scripts: [worker], type: "module", persistent: false }
+      delete manifest.side_panel
+      manifest.permissions = manifest.permissions?.filter(
+        (permission) => !["identity", "offscreen", "sidePanel"].includes(permission),
+      )
+    },
     "vite:build:extendConfig": (entrypoints, viteConfig) => {
       const entrypoint = entrypoints.length === 1 ? entrypoints[0] : undefined
       if (entrypoint?.type !== "content-script") return

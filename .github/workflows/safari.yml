@@ -1,0 +1,117 @@
+name: Safari - Sync, Test and Release
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: safari-main
+  cancel-in-progress: false
+
+jobs:
+  safari:
+    if: github.repository == 'stellarjmr/read-frog'
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      WXT_SKIP_ENV_VALIDATION: "true"
+      SKIP_FREE_API: "true"
+      HUSKY: "0"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Merge current upstream main without overwriting Safari changes
+        id: source
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch https://github.com/mengxi-ream/read-frog.git main
+          UPSTREAM_SHA=$(git rev-parse FETCH_HEAD)
+          git merge --no-edit "$UPSTREAM_SHA"
+          SOURCE_SHA=$(git rev-parse HEAD)
+          VERSION=$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')
+          TAG="safari-v${VERSION}-${SOURCE_SHA:0:12}"
+          echo "sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+          echo "upstream=$UPSTREAM_SHA" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo 'needed=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'needed=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup pnpm and Node.js from package.json
+        if: steps.source.outputs.needed == 'true'
+        uses: pnpm/setup@v2
+        with:
+          cache: true
+          install: false
+
+      - name: Install locked dependencies
+        if: steps.source.outputs.needed == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Format, lint and type checks
+        if: steps.source.outputs.needed == 'true'
+        run: |
+          pnpm fmt:check
+          pnpm lint
+
+      - name: Test extension including Safari fallbacks
+        if: steps.source.outputs.needed == 'true'
+        run: pnpm test
+
+      - name: Build universal macOS Safari application
+        if: steps.source.outputs.needed == 'true'
+        env:
+          SAFARI_BUILD_NUMBER: ${{ github.run_number }}
+        run: pnpm safari:package
+
+      - name: Upload tested downloads
+        if: steps.source.outputs.needed == 'true'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ steps.source.outputs.tag }}
+          path: .output/safari-artifacts/
+          if-no-files-found: error
+
+      - name: Update fork only after validation
+        if: steps.source.outputs.needed == 'true'
+        run: git push origin HEAD:main
+
+      # GITHUB_TOKEN pushes do not trigger another workflow. Publishing is in
+      # this same run so scheduled upstream merges always produce a download.
+      - name: Publish Safari update
+        if: steps.source.outputs.needed == 'true'
+        env:
+          RELEASE_TAG: ${{ steps.source.outputs.tag }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          UPSTREAM_SHA: ${{ steps.source.outputs.upstream }}
+          VERSION: ${{ steps.source.outputs.version }}
+        shell: bash
+        run: |
+          cat > .output/safari-release.md <<EOF
+          Read Frog ${VERSION} for macOS Safari (Apple Silicon and Intel).
+
+          - Safari source: ${SOURCE_SHA}
+          - Upstream main: ${UPSTREAM_SHA}
+          - Download Read-Frog-Safari-macOS.zip and follow [installation and updates](https://github.com/${GITHUB_REPOSITORY}/blob/main/SAFARI.md).
+          - The CI app is ad-hoc signed for local testing; Safari's Allow Unsigned Extensions setting is required. It is not an App Store or notarized release.
+          - Read-Frog-Safari-Xcode.zip contains the generated project for signing with your own Apple account.
+          - SHA256SUMS contains the download checksums.
+          EOF
+          gh release create "$RELEASE_TAG" .output/safari-artifacts/* \
+            --target "$SOURCE_SHA" --title "Read Frog ${VERSION} — Safari" \
+            --notes-file .output/safari-release.md --latest
