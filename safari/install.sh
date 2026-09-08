@@ -27,7 +27,10 @@ fi
 mv "$stage/$app_name.app" "$destination"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$destination"
 pluginkit -a "$destination/Contents/PlugIns/$app_name Extension.appex"
-git rev-parse HEAD > "$state_dir/installed-commit"
+python3 - "$destination/Contents/Resources/safari-build.json" > "$state_dir/installed-commit" <<'PY'
+import json, sys
+print(json.load(open(sys.argv[1]))["sourceSha"])
+PY
 if [[ -n "${SAFARI_SIGN_IDENTITY:-}" ]]; then
   printf '%s\n' "$SAFARI_SIGN_IDENTITY" > "$state_dir/signing-identity"
 fi

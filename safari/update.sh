@@ -16,9 +16,20 @@ fi
 git fetch origin main
 git merge --ff-only origin/main
 source_sha="$(git rev-parse HEAD)"
-if [[ -f "$state_dir/installed-commit" ]] && \
-   [[ "$(cat "$state_dir/installed-commit")" == "$source_sha" ]] && \
-   [[ -d "$HOME/Applications/Read Frog Safari.app" ]]; then
+if [[ "$source_sha" != "$(git rev-parse origin/main)" ]]; then
+  echo 'Local main contains unpublished commits. Push and validate them before updating the installed app.' >&2
+  exit 1
+fi
+if python3 - "$HOME/Applications/Read Frog Safari.app/Contents/Resources/safari-build.json" "$source_sha" <<'PY'
+import json, pathlib, sys
+metadata = pathlib.Path(sys.argv[1])
+try:
+    installed = json.loads(metadata.read_text())
+    sys.exit(0 if installed["sourceSha"] == sys.argv[2] and not installed["dirty"] else 1)
+except (OSError, ValueError, KeyError):
+    sys.exit(1)
+PY
+then
   echo "Already installed: $source_sha"
   exit 0
 fi
