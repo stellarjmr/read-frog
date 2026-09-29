@@ -161,7 +161,12 @@ async function translateWithTextStream({
     translateRequest.glossaryEnabled,
     translateRequest.language.targetCode,
   )
-  trackGlossaryUsed("selectionTranslation", glossaryTerms, classifyProviderConfig(providerConfig))
+  trackGlossaryUsed(
+    "selectionTranslation",
+    glossaryTerms,
+    translateRequest.language.targetCode,
+    classifyProviderConfig(providerConfig),
+  )
 
   const { systemPrompt, prompt } = getTranslatePromptFromConfig(
     { customPromptsConfig: translateRequest.customPromptsConfig },
@@ -237,7 +242,12 @@ async function translateWithHostedTextStream({
     translateRequest.glossaryEnabled,
     translateRequest.language.targetCode,
   )
-  trackGlossaryUsed("selectionTranslation", glossaryTerms, classifyResolvedProvider(provider))
+  trackGlossaryUsed(
+    "selectionTranslation",
+    glossaryTerms,
+    translateRequest.language.targetCode,
+    classifyResolvedProvider(provider),
+  )
   if (abortController.signal.aborted) {
     throw new DOMException("aborted", "AbortError")
   }
@@ -325,6 +335,9 @@ function TranslateFooterContent({
 
 interface SelectionTranslationContextValue {
   prepareToolbarOpen: () => void
+  // Opens the translation from the toolbar without its button (from the
+  // toolbar's "more" menu), anchored where that button would be.
+  openToolbarTranslation: (anchorElement: HTMLElement | null) => void
 }
 
 const SelectionTranslationContext = createContext<SelectionTranslationContextValue | null>(null)
@@ -480,6 +493,7 @@ export function SelectionTranslationProvider({ children }: { children: ReactNode
         sourceSurface,
       )
       const providerAnalytics = classifyResolvedProvider(translateRequest.provider)
+      const target_language = translateRequest.language.targetCode
 
       setIsTranslating(true)
       setTranslatedText(undefined)
@@ -495,6 +509,8 @@ export function SelectionTranslationProvider({ children }: { children: ReactNode
         void trackFeatureUsed({
           ...analyticsContext,
           ...providerAnalytics,
+          char_count: preparedText.length,
+          target_language,
           outcome: "failure",
         })
         return
@@ -508,6 +524,8 @@ export function SelectionTranslationProvider({ children }: { children: ReactNode
         void trackFeatureUsed({
           ...analyticsContext,
           ...providerAnalytics,
+          char_count: preparedText.length,
+          target_language,
           outcome: "failure",
         })
         return
@@ -548,6 +566,8 @@ export function SelectionTranslationProvider({ children }: { children: ReactNode
           void trackFeatureUsed({
             ...analyticsContext,
             ...providerAnalytics,
+            char_count: preparedText.length,
+            target_language,
             outcome: "failure",
           })
           return
@@ -594,6 +614,8 @@ export function SelectionTranslationProvider({ children }: { children: ReactNode
         void trackFeatureUsed({
           ...analyticsContext,
           ...providerAnalytics,
+          char_count: preparedText.length,
+          target_language,
           outcome: "success",
         })
       } catch (caughtError) {
@@ -606,6 +628,8 @@ export function SelectionTranslationProvider({ children }: { children: ReactNode
           void trackFeatureUsed({
             ...analyticsContext,
             ...providerAnalytics,
+            char_count: preparedText.length,
+            target_language,
             outcome: "failure",
           })
         }
@@ -775,6 +799,22 @@ export function SelectionTranslationProvider({ children }: { children: ReactNode
     [commitOpenRequest],
   )
 
+  const openToolbarTranslation = useCallback(
+    (anchorElement: HTMLElement | null) => {
+      if (!selectionSession || !anchorElement) {
+        return
+      }
+
+      const rect = anchorElement.getBoundingClientRect()
+      openSelectionTranslationRequest({
+        anchor: { x: rect.left, y: rect.top },
+        session: selectionSession,
+        surface: ANALYTICS_SURFACE.SELECTION_TOOLBAR,
+      })
+    },
+    [openSelectionTranslationRequest, selectionSession],
+  )
+
   const openFromContextMenu = useCallback(() => {
     openSelectionTranslationRequest(resolveContextMenuRequest(), {
       showMissingSelectionToast: true,
@@ -820,8 +860,9 @@ export function SelectionTranslationProvider({ children }: { children: ReactNode
   const contextValue = useMemo<SelectionTranslationContextValue>(
     () => ({
       prepareToolbarOpen,
+      openToolbarTranslation,
     }),
-    [prepareToolbarOpen],
+    [openToolbarTranslation, prepareToolbarOpen],
   )
 
   return (
