@@ -38,7 +38,16 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git fetch https://github.com/mengxi-ream/read-frog.git main
           UPSTREAM_SHA=$(git rev-parse FETCH_HEAD)
+          FORK_SHA=$(git rev-parse HEAD)
           git merge --no-edit "$UPSTREAM_SHA"
+          # GITHUB_TOKEN cannot push changes under .github/workflows, so the
+          # fork keeps its own workflows and takes every other upstream change.
+          git diff --no-renames --name-status "$FORK_SHA" HEAD -- .github/workflows | while read -r status file; do
+            if [ "$status" = A ]; then git rm -q -f -- "$file"; else git checkout "$FORK_SHA" -- "$file"; fi
+          done
+          if ! git diff --cached --quiet; then
+            git commit -q -m 'chore(ci): keep fork workflows when syncing upstream'
+          fi
           SOURCE_SHA=$(git rev-parse HEAD)
           VERSION=$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')
           TAG="safari-v${VERSION}-${SOURCE_SHA:0:12}"
