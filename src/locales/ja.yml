@@ -643,7 +643,7 @@ options:
       providerUnavailable: 選択したプロバイダーは利用できません
     customActions:
       title: カスタム AI アクション
-      pageDescription: 独自のプロンプトを作成し、選択ツールバーから選択したテキストに対して実行します。
+      pageDescription: 独自のプロンプトを作成し、選択ツールバーから選択したテキストに対して実行します。生成結果のデータ、スタイル、インタラクションはすべてカスタマイズできます。
       description: 選択テキスト向けに独自の構造化 AI アクションを追加
       configTitle: アクション設定
       builtIn: 組み込み
@@ -1469,6 +1469,9 @@ options:
           description: すべてのキャッシュされたAI区切り結果が削除されます。次回AI区切りを有効にして動画を再生すると、字幕が再処理されます。
   whatsNew:
     title: 新機能
+    postType:
+      promotion: キャンペーン
+      update: アップデート
   rateUs:
     title: レビューを書く
   configMigration:
@@ -1564,6 +1567,7 @@ action:
   pinToToolbar: ツールバーに固定
   unpinFromToolbar: ツールバーから固定解除
   dragToReorder: ドラッグして並べ替え
+  addCustomAction: カスタム AI アクションを追加
 noteSuggestion:
   title: 保存におすすめ
   description: Notebase に保存したい単語を選んで、いつでも復習できます。

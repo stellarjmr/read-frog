@@ -644,7 +644,7 @@ options:
       providerUnavailable: Seçilmiş provayder əlçatan deyil
     customActions:
       title: Fərdi süni intellekt əməliyyatları
-      pageDescription: Öz təlimatlarınızı yazın və seçim alətlər panelindən seçilmiş mətnə tətbiq edin.
+      pageDescription: Öz təlimatlarınızı yazın və seçim alətlər panelindən seçilmiş mətnə tətbiq edin. Hər nəticənin məlumatları, üslubu və qarşılıqlı əlaqəsi tam fərdiləşdirilə bilər.
       description: Seçilmiş mətn üçün strukturlaşdırılmış fərdi süni intellekt əməliyyatları əlavə edin
       configTitle: Əməliyyat konfiqurasiyası
       builtIn: Daxili
@@ -1474,6 +1474,9 @@ options:
           description: Keşdəki bütün süni intellekt seqmentləşdirmə nəticələri silinəcək. Növbəti dəfə süni intellekt seqmentləşdirməsi aktiv halda video açdıqda subtitrlər yenidən işlənəcək.
   whatsNew:
     title: Yeniliklər
+    postType:
+      promotion: Kampaniya
+      update: Yeniləmə
   rateUs:
     title: Bizi qiymətləndir
   configMigration:
@@ -1569,6 +1572,7 @@ action:
   pinToToolbar: Alətlər panelinə sabitlə
   unpinFromToolbar: Alətlər panelindən ayır
   dragToReorder: Sıralamaq üçün sürükləyin
+  addCustomAction: Fərdi süni intellekt əməliyyatı əlavə et
 noteSuggestion:
   title: Saxlamağa dəyər
   description: Notebase daxilində saxlamaq istədiyiniz sözləri seçin və istənilən vaxt təkrarlayın.
