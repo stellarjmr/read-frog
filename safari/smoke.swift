@@ -171,12 +171,23 @@ func require(_ condition: Bool, _ message: String) throws {
       try await waitFor(
         page, "document.body?.innerText.includes('Reading every day') === true",
         "Fixture did not load")
-      try await Task.sleep(for: .seconds(1))
       let toggled = try await options.callAsyncJavaScript(
         """
         const tabs=await browser.tabs.query({});
         const tab=tabs.find(t=>t.url?.startsWith(origin));
         if(!tab) throw Error('Fixture tab not found: '+JSON.stringify(tabs));
+        // The host reports its language only after registering the translation
+        // listener. DOM readiness alone can precede that asynchronous bootstrap.
+        const readyKey=`detectedCode.${tab.id}`;
+        let ready=false;
+        for(let attempt=0;attempt<100;attempt++) {
+          if((await browser.storage.session.get(readyKey))[readyKey] !== undefined) {
+            ready=true;
+            break;
+          }
+          await new Promise(resolve=>setTimeout(resolve,300));
+        }
+        if(!ready) throw Error('Host content did not become ready within 30 seconds');
         return JSON.stringify(await browser.runtime.sendMessage({id:2,type:'tryToSetEnablePageTranslationByTabId',data:{tabId:tab.id,enabled:true},timestamp:Date.now()}));
         """, arguments: ["origin": CommandLine.arguments[2]], in: nil, contentWorld: .page)
       print("translation toggle: \(toggled ?? "nil")")
