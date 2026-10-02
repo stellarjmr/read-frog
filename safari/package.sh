@@ -15,6 +15,11 @@ if [[ -z "${DEVELOPER_DIR:-}" ]]; then
   done
 fi
 xcodebuild -version
+xcode_major="$(xcodebuild -version | awk '/^Xcode / { split($2, version, "."); print version[1] }')"
+if [[ "$xcode_major" -lt 26 ]]; then
+  echo "Safari app packaging requires Xcode 26 or newer for the adaptive app icon." >&2
+  exit 1
+fi
 if xcrun --find safari-web-extension-packager >/dev/null 2>&1; then
   packager=safari-web-extension-packager
 else
@@ -62,6 +67,8 @@ if count not in (4, 8):
     raise SystemExit(f"Unexpected Xcode project: expected four or eight bundle IDs, found {count}")
 project.write_text(content)
 PY
+
+node safari/configure-app-icon.mjs "$project/project.pbxproj" "$app_name"
 
 # Older converters emit a multiplatform project with a '(macOS)' scheme even
 # for --macos-only; newer Xcode emits one scheme named after the app.
@@ -120,6 +127,7 @@ PLIST
 codesign --force --sign "$identity" --timestamp=none --entitlements "$output/extension.entitlements" "$extension"
 codesign --force --sign "$identity" --timestamp=none --entitlements "$output/app.entitlements" "$app"
 codesign --verify --deep --strict "$app"
+node safari/verify-app-icon.mjs "$app"
 node safari/verify.mjs "$extension/Contents/Resources"
 for binary in "$app/Contents/MacOS/$app_name" "$extension/Contents/MacOS/$app_name Extension"; do
   architectures="$(lipo -archs "$binary")"

@@ -12,7 +12,7 @@ GitHub 自动构建的应用使用 ad-hoc 签名，供本地测试使用，没�
 
 ## 本机构建
 
-安装完整 Xcode（仅 Command Line Tools 不够），接受 Xcode 的许可并完成首次启动。仓库的 `package.json` 固定 pnpm 和 Node 版本，pnpm 会安装对应运行时。
+安装完整 Xcode 26 或更新版本（仅 Command Line Tools 不够），接受 Xcode 的许可并完成首次启动。仓库的 `package.json` 固定 pnpm 和 Node 版本，pnpm 会安装对应运行时。
 
 ```bash
 git clone https://github.com/stellarjmr/read-frog.git
@@ -27,6 +27,8 @@ pnpm safari:install
 - `.output/safari-artifacts/Read-Frog-Safari-macOS.zip`
 - `.output/safari-artifacts/Read-Frog-Safari-Xcode.zip`
 - `.output/safari-artifacts/SHA256SUMS`
+
+应用图标由 `assets/read-frog-original.png` 和 `safari/app-icon.json` 自动生成，无需手动使用 Icon Composer。macOS 26 及更新版本支持明暗图标；在系统设置 → 外观中，将“图标与小组件样式”设为“深色”，再选择“自动”，即可随系统外观切换（见 [Apple 外观设置说明](https://support.apple.com/guide/mac-help/change-appearance-settings-mchlp1225/mac)）。旧版 macOS 使用 Xcode 生成的静态兼容图标。导出的 Xcode 项目包含完整的 `AppIcon.icon`，也可用 Icon Composer 打开调整。
 
 脚本会自动寻找 `/Applications/Xcode.app` 或 `Xcode-beta.app`。也可以设置 `DEVELOPER_DIR`。已有 Apple 开发证书时，用 `security find-identity -v -p codesigning` 查看证书标识，然后：
 

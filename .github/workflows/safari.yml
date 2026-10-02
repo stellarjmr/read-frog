@@ -23,6 +23,8 @@ jobs:
       WXT_SKIP_ENV_VALIDATION: "true"
       SKIP_FREE_API: "true"
       HUSKY: "0"
+      # macos-15 defaults to Xcode 16, which cannot compile Icon Composer files.
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
