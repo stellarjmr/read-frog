@@ -17,14 +17,14 @@ concurrency:
 jobs:
   safari:
     if: github.repository == 'stellarjmr/read-frog'
-    runs-on: macos-15
+    # Icon Composer's asset runtime can crash on macOS 15 while rendering .icon files.
+    runs-on: macos-26
     timeout-minutes: 45
     env:
       WXT_SKIP_ENV_VALIDATION: "true"
       SKIP_FREE_API: "true"
       HUSKY: "0"
-      # macos-15 defaults to Xcode 16, which cannot compile Icon Composer files.
-      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7

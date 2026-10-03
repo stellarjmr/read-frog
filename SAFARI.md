@@ -14,6 +14,8 @@ GitHub 自动构建的应用使用 ad-hoc 签名，供本地测试使用，没�
 
 安装完整 Xcode 26 或更新版本（仅 Command Line Tools 不够），接受 Xcode 的许可并完成首次启动。仓库的 `package.json` 固定 pnpm 和 Node 版本，pnpm 会安装对应运行时。
 
+推荐使用 macOS 26 或更新版本进行构建。CI 使用 macOS 26 + Xcode 26.6，避免旧系统上 Icon Composer 的资源编译器崩溃；生成的应用仍以 macOS 14 为最低运行版本。
+
 ```bash
 git clone https://github.com/stellarjmr/read-frog.git
 cd read-frog
